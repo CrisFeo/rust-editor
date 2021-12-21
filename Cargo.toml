@@ -1,0 +1,10 @@
+[package]
+name = "rust-editor"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+gag = "1.0"
+ropey = "1.3"
+crossterm = "0.22"
+hyperscan = { version = "0.2", features = ["static"] }
