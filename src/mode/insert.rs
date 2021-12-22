@@ -12,7 +12,8 @@ use crate::{
 pub fn update_mode_insert(
   buffer: &mut Buffer,
   _window: &mut Window,
-  _modifiers: Modifiers, key: Key
+  _modifiers: Modifiers,
+  key: Key
 ) -> Option<Mode> {
   use crate::key::Key::*;
   match key {

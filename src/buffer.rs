@@ -22,7 +22,7 @@ impl Buffer {
       mode: Mode::Normal,
       command: Rope::new(),
       contents: contents,
-      selections: vec![Selection::new(0, 0)],
+      selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
     }
   }

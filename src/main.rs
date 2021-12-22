@@ -1,5 +1,6 @@
 extern crate gag;
 extern crate ropey;
+extern crate regex;
 extern crate crossterm;
 
 mod screen;
@@ -9,35 +10,18 @@ mod buffer;
 mod selection;
 mod mode;
 mod key;
-mod regex;
 
 use std::{
   env,
+  fs::File,
+  io::BufReader,
 };
-use std::fs::{
-  File,
-};
-use std::io::{
-  BufReader,
-};
-use ropey::{
-  Rope,
-};
-use view::{
-  View,
-};
-use window::{
-  Window,
-};
-use buffer::{
-  Buffer,
-};
-use mode::{
-  Mode,
-  update_mode_normal,
-  update_mode_insert,
-  update_mode_filter,
-  update_mode_reject,
+use ropey::Rope;
+use crate::{
+  view::View,
+  window::Window,
+  buffer::Buffer,
+  mode::update_mode,
 };
 
 fn main() {
@@ -56,17 +40,10 @@ fn main() {
     loop {
       view.render(&buffer, &window);
       let (modifiers, key) = view.poll();
-      let new_mode = match &buffer.mode {
-        Mode::Normal => update_mode_normal(&mut buffer, &mut window, modifiers, key),
-        Mode::Insert => update_mode_insert(&mut buffer, &mut window, modifiers, key),
-        Mode::Filter => update_mode_filter(&mut buffer, &mut window, modifiers, key),
-        Mode::Reject => update_mode_reject(&mut buffer, &mut window, modifiers, key),
+      match update_mode(&mut buffer, &mut window, modifiers, key) {
+        Some(new_mode) => buffer.mode = new_mode,
+        None => break,
       };
-      if let Some(mode) = new_mode {
-        buffer.mode = mode;
-      } else {
-        break;
-      }
       window.set_size(view.buffer_size());
       window.scroll_into_view(&buffer.contents, buffer.primary_selection().cursor());
     }

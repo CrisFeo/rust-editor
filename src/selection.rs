@@ -1,4 +1,5 @@
 use ropey::Rope;
+use regex::Regex;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Op {
@@ -33,7 +34,16 @@ pub struct Selection {
 }
 
 impl Selection {
-  pub fn new(start: usize, end: usize) -> Selection {
+  pub fn new_at_start(start: usize, end: usize) -> Selection {
+    Selection {
+      start: start,
+      end: end,
+      side: Side::Start,
+      last_line_offset: None,
+    }
+  }
+
+  pub fn new_at_end(start: usize, end: usize) -> Selection {
     Selection {
       start: start,
       end: end,
@@ -50,6 +60,10 @@ impl Selection {
     self.end
   }
 
+  pub fn side(&self) -> Side {
+    self.side
+  }
+
   pub fn cursor(&self) -> usize {
     match self.side {
       Side::Start => self.start,
@@ -61,12 +75,27 @@ impl Selection {
     self.end.saturating_sub(self.start) + 1
   }
 
+  pub fn scan(&self, regex: &Regex, contents: &Rope) -> Vec<(usize, usize)> {
+    let start_byte = contents.char_to_byte(self.start);
+    let slice: std::borrow::Cow<str> = contents.slice(self.start..self.end).into();
+    regex
+      .find_iter(&slice)
+      .map(|m| {
+        let start = start_byte.saturating_add(m.start());
+        let start = contents.byte_to_char(start);
+        let end = start_byte.saturating_add(m.end());
+        let end = contents.byte_to_char(end).saturating_sub(1);
+        (start, end)
+      })
+      .collect()
+  }
+
   pub fn try_merge(&self, other: &Self) -> Option<Selection> {
     if other.start < self.start {
       other.try_merge(self)
     } else {
       if self.end >= other.start {
-        Some(Selection::new(self.start, self.end.max(other.end)))
+        Some(Selection::new_at_end(self.start, self.end.max(other.end)))
       } else {
         None
       }
