@@ -31,7 +31,8 @@ fn main() {
     let reader = BufReader::new(file);
     Rope::from_reader(reader).unwrap()
   } else {
-    Rope::from_str("abcdefghijk\nhello\na\ndoggydog\n\n\nsplorteeeeeee")
+    Rope::new()
+    //Rope::from_str("abcdefghijk\nhello\na\ndoggydog\n\n\nsplorteeeeeee")
   };
   let result = std::panic::catch_unwind(|| {
     let mut buffer = Buffer::new(contents);

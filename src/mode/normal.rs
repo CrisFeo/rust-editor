@@ -42,7 +42,7 @@ pub fn update_mode_normal(
     Char('A') => {
       buffer.apply_operations(&[Op::Collapse]);
       return Some(Mode::Insert)
-      },
+    },
     Char('a') => {
       buffer.apply_operations(&[Op::MoveByChar(1), Op::Collapse]);
       return Some(Mode::Insert);

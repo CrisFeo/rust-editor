@@ -1,6 +1,4 @@
-use gag::{
-  Hold,
-};
+use gag::Hold;
 use std::io::{
   self,
   Stdout,
