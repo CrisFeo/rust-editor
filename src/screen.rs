@@ -8,6 +8,7 @@ use std::io::{
 use crossterm::{
   style::{
     Color,
+    Print,
     SetForegroundColor,
     SetBackgroundColor,
   },
@@ -138,6 +139,11 @@ impl Screen {
       return;
     }
     self.buffer[row * self.width + col] = Some(Cell(ch, bg, fg));
+    if col < self.width {
+      self.current_cursor = (row, col + 1);
+    } else {
+      self.current_cursor = (row + 1, col);
+    }
   }
 
   fn set_cursor(&mut self, row: usize, col: usize) {
@@ -168,7 +174,7 @@ impl Screen {
           self.set_cursor(row, col);
           self.set_bg(bg);
           self.set_fg(fg);
-          write!(self.output, "{}", ch).unwrap();
+          queue!(self.output, Print(ch)).unwrap();
         }
       }
     }

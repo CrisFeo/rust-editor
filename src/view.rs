@@ -91,7 +91,11 @@ impl View {
                 Color::White
               }
             } else {
-              Color::Grey
+              if is_cursor {
+                Color::White
+              } else {
+                Color::Grey
+              }
             }
           };
           fg = Color::Black;

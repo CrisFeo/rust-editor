@@ -84,7 +84,10 @@ impl Selection {
         let start = start_byte.saturating_add(m.start());
         let start = contents.byte_to_char(start);
         let end = start_byte.saturating_add(m.end());
-        let end = contents.byte_to_char(end).saturating_sub(1);
+        let mut end = contents.byte_to_char(end);
+        if end > start {
+          end = end.saturating_sub(1);
+        }
         (start, end)
       })
       .collect()
