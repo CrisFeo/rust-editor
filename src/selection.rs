@@ -36,8 +36,8 @@ pub struct Selection {
 impl Selection {
   pub fn new_at_start(start: usize, end: usize) -> Selection {
     Selection {
-      start: start,
-      end: end,
+      start,
+      end,
       side: Side::Start,
       last_line_offset: None,
     }
@@ -45,8 +45,8 @@ impl Selection {
 
   pub fn new_at_end(start: usize, end: usize) -> Selection {
     Selection {
-      start: start,
-      end: end,
+      start,
+      end,
       side: Side::End,
       last_line_offset: None,
     }

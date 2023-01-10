@@ -112,8 +112,9 @@ impl Screen {
           self.width = width as usize;
           self.height = height as usize;
           self.buffer.resize(self.width * self.height, None);
+          let blank = Cell(' ', Color::Black, Color::White);
           for i in 0..self.buffer.len() {
-            self.buffer[i] = Some(Cell(' ', Color::Black, Color::White));
+            self.buffer[i] = Some(blank);
           }
         },
         _ => { },
