@@ -1,32 +1,13 @@
-use gag::Hold;
-use std::io::{
-  self,
-  Stdout,
-  BufWriter,
-  Write,
-};
+use crate::key::{Key, Modifiers};
 use crossterm::{
-  style::{
-    Color,
-    Print,
-    SetForegroundColor,
-    SetBackgroundColor,
-  },
   cursor,
+  event::{read, Event, KeyCode, KeyModifiers},
+  execute, queue,
+  style::{Color, Print, SetBackgroundColor, SetForegroundColor},
   terminal,
-  execute,
-  queue,
-  event::{
-    Event,
-    read,
-    KeyCode,
-    KeyModifiers,
-  },
 };
-use crate::key::{
-  Key,
-  Modifiers,
-};
+use gag::Hold;
+use std::io::{self, BufWriter, Stdout, Write};
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Cell(char, Color, Color);
@@ -44,17 +25,17 @@ pub struct Screen {
 
 impl Screen {
   pub fn new() -> Self {
-    let held_stderr = gag::Hold::stderr().unwrap();
+    let held_stderr = gag::Hold::stderr().expect("should gag stderr");
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
-    execute!(output, terminal::EnterAlternateScreen).unwrap();
-    terminal::enable_raw_mode().unwrap();
-    queue!(output, cursor::Hide).unwrap();
-    queue!(output, cursor::MoveTo(0, 0)).unwrap();
-    queue!(output, SetBackgroundColor(Color::Black)).unwrap();
-    queue!(output, SetForegroundColor(Color::White)).unwrap();
-    output.flush().unwrap();
+    execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
+    terminal::enable_raw_mode().expect("should enable raw mode");
+    queue!(output, cursor::Hide).expect("should hide cursor");
+    queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor");
+    queue!(output, SetBackgroundColor(Color::Black)).expect("should set background color");
+    queue!(output, SetForegroundColor(Color::White)).expect("should set foreground color");
+    output.flush().expect("should flush queued output");
     let (width, height) = {
-      let (width, height) = terminal::size().unwrap();
+      let (width, height) = terminal::size().expect("should retrieve terminal size");
       (width as usize, height as usize)
     };
     let mut buffer = Vec::with_capacity(width * height);
@@ -79,35 +60,35 @@ impl Screen {
 
   pub fn poll(&mut self) -> (Modifiers, Key) {
     loop {
-      match read().unwrap() {
+      match read().expect("should read input") {
         Event::Key(event) => {
           let modifiers = Modifiers {
             control: event.modifiers.contains(KeyModifiers::CONTROL),
-            shift:   event.modifiers.contains(KeyModifiers::SHIFT),
-            alt:     event.modifiers.contains(KeyModifiers::ALT),
+            shift: event.modifiers.contains(KeyModifiers::SHIFT),
+            alt: event.modifiers.contains(KeyModifiers::ALT),
           };
           let key = match event.code {
             KeyCode::Backspace => Key::Backspace,
-            KeyCode::Enter     => Key::Enter,
-            KeyCode::Left      => Key::Left,
-            KeyCode::Right     => Key::Right,
-            KeyCode::Up        => Key::Up,
-            KeyCode::Down      => Key::Down,
-            KeyCode::Home      => Key::Home,
-            KeyCode::End       => Key::End,
-            KeyCode::PageUp    => Key::PageUp,
-            KeyCode::PageDown  => Key::PageDown,
-            KeyCode::Tab       => Key::Tab,
-            KeyCode::BackTab   => Key::BackTab,
-            KeyCode::Delete    => Key::Delete,
-            KeyCode::Insert    => Key::Insert,
-            KeyCode::F(n)      => Key::F(n),
-            KeyCode::Char(c)   => Key::Char(c),
-            KeyCode::Null      => Key::Null,
-            KeyCode::Esc       => Key::Esc,
+            KeyCode::Enter => Key::Enter,
+            KeyCode::Left => Key::Left,
+            KeyCode::Right => Key::Right,
+            KeyCode::Up => Key::Up,
+            KeyCode::Down => Key::Down,
+            KeyCode::Home => Key::Home,
+            KeyCode::End => Key::End,
+            KeyCode::PageUp => Key::PageUp,
+            KeyCode::PageDown => Key::PageDown,
+            KeyCode::Tab => Key::Tab,
+            KeyCode::BackTab => Key::BackTab,
+            KeyCode::Delete => Key::Delete,
+            KeyCode::Insert => Key::Insert,
+            KeyCode::F(n) => Key::F(n),
+            KeyCode::Char(c) => Key::Char(c),
+            KeyCode::Null => Key::Null,
+            KeyCode::Esc => Key::Esc,
           };
           return (modifiers, key);
-        },
+        }
         Event::Resize(width, height) => {
           self.width = width as usize;
           self.height = height as usize;
@@ -116,8 +97,8 @@ impl Screen {
           for i in 0..self.buffer.len() {
             self.buffer[i] = Some(blank);
           }
-        },
-        _ => { },
+        }
+        _ => {}
       }
     }
   }
@@ -149,21 +130,21 @@ impl Screen {
 
   fn set_cursor(&mut self, row: usize, col: usize) {
     if (row, col) != self.current_cursor {
-      queue!(self.output, cursor::MoveTo(col as u16, row as u16)).unwrap();
+      queue!(self.output, cursor::MoveTo(col as u16, row as u16)).expect("should move cursor");
       self.current_cursor = (row, col);
     }
   }
 
   fn set_bg(&mut self, color: Color) {
     if color != self.current_bg {
-      queue!(self.output, SetBackgroundColor(color)).unwrap();
+      queue!(self.output, SetBackgroundColor(color)).expect("should set background color");
       self.current_bg = color;
     }
   }
 
   fn set_fg(&mut self, color: Color) {
     if color != self.current_fg {
-      queue!(self.output, SetForegroundColor(color)).unwrap();
+      queue!(self.output, SetForegroundColor(color)).expect("should set foreground color");
       self.current_fg = color;
     }
   }
@@ -175,18 +156,17 @@ impl Screen {
           self.set_cursor(row, col);
           self.set_bg(bg);
           self.set_fg(fg);
-          queue!(self.output, Print(ch)).unwrap();
+          queue!(self.output, Print(ch)).expect("should queue printing character");
         }
       }
     }
-    self.output.flush().unwrap();
+    self.output.flush().expect("should flush queued output");
   }
-
 }
 
 impl Drop for Screen {
   fn drop(&mut self) {
-    terminal::disable_raw_mode().unwrap();
-    execute!(self.output, terminal::LeaveAlternateScreen).unwrap();
+    terminal::disable_raw_mode().expect("should disable raw mode");
+    execute!(self.output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");
   }
 }

@@ -1,22 +1,19 @@
-mod normal;
-mod insert;
-mod split;
-mod search;
 mod filter;
+mod insert;
+mod normal;
+mod search;
+mod split;
 
-pub use normal::*;
-pub use insert::*;
-pub use split::*;
-pub use search::*;
 pub use filter::*;
+pub use insert::*;
+pub use normal::*;
+pub use search::*;
+pub use split::*;
 
 use crate::{
-  window::Window,
   buffer::Buffer,
-  key::{
-    Key,
-    Modifiers,
-  },
+  key::{Key, Modifiers},
+  window::Window,
 };
 
 #[derive(Debug, Copy, Clone)]
@@ -32,7 +29,7 @@ pub fn update_mode(
   buffer: &mut Buffer,
   window: &mut Window,
   modifiers: Modifiers,
-  key: Key
+  key: Key,
 ) -> Option<Mode> {
   match &buffer.mode {
     Mode::Normal => update_mode_normal(buffer, window, modifiers, key),

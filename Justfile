@@ -1,5 +1,5 @@
 list:
-  just --list
+  just --list --unsorted
 
 run *ARGS:
   cargo run {{ARGS}}

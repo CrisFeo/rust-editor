@@ -1,41 +1,34 @@
-extern crate gag;
-extern crate ropey;
-extern crate regex;
 extern crate crossterm;
+extern crate gag;
+extern crate regex;
+extern crate ropey;
 
+mod buffer;
+mod key;
+mod mode;
 mod screen;
+mod selection;
 mod view;
 mod window;
-mod buffer;
-mod selection;
-mod mode;
-mod key;
 
-use std::{
-  env,
-  fs::File,
-  io::BufReader,
-};
-use ropey::Rope;
-use crate::{
-  view::View,
-  window::Window,
-  buffer::Buffer,
-  mode::update_mode,
-};
+use std::process::exit;
+
+use crate::{buffer::Buffer, mode::update_mode, view::View, window::Window};
 
 fn main() {
-  let filename = env::args().nth(1);
-  let contents = if let Some(filename) = filename {
-    let file = File::open(filename).unwrap();
-    let reader = BufReader::new(file);
-    Rope::from_reader(reader).unwrap()
-  } else {
-    Rope::new()
-    //Rope::from_str("abcdefghijk\nhello\na\ndoggydog\n\n\nsplorteeeeeee")
-  };
+  let filename = std::env::args().nth(1);
   let result = std::panic::catch_unwind(|| {
-    let mut buffer = Buffer::new(contents);
+    let buffer = match filename {
+      Some(filename) => Buffer::new_from_file(filename),
+      None => Ok(Buffer::new()),
+    };
+    let mut buffer = match buffer {
+      Ok(buffer) => buffer,
+      Err(e) => {
+        eprintln!("{}", e);
+        exit(1);
+      },
+    };
     let mut view = View::new();
     let mut window = Window::new();
     loop {

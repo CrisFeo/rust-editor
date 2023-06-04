@@ -59,6 +59,4 @@ impl Window {
       self.scroll_left = col.saturating_sub(self.width.saturating_sub(1));
     }
   }
-
 }
-

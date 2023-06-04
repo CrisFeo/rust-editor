@@ -1,5 +1,5 @@
-use ropey::Rope;
 use regex::Regex;
+use ropey::Rope;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Op {
@@ -77,7 +77,8 @@ impl Selection {
 
   pub fn scan(&self, regex: &Regex, contents: &Rope) -> Vec<(usize, usize)> {
     let start_byte = contents.char_to_byte(self.start);
-    let slice: std::borrow::Cow<str> = contents.slice(self.start..self.end).into();
+    let end = usize::min(self.end.saturating_add(1), contents.len_chars().saturating_sub(1));
+    let slice: std::borrow::Cow<str> = contents.slice(self.start..end).into();
     regex
       .find_iter(&slice)
       .map(|m| {
@@ -122,7 +123,7 @@ impl Selection {
   pub fn adjust(&mut self, contents: &Rope, change: Change) {
     let max = contents.len_chars();
     match change {
-      Change::None => { },
+      Change::None => {}
       Change::Addition(begin, delta) => {
         let delta = delta as isize;
         if self.start >= begin {
@@ -131,7 +132,7 @@ impl Selection {
         if self.end >= begin {
           self.end = step(max, self.end, delta);
         }
-      },
+      }
       Change::Removal(begin, delta) => {
         let end = begin.saturating_add(delta);
         let delta = -(delta as isize);
@@ -145,7 +146,7 @@ impl Selection {
         } else if self.end >= begin {
           self.end = begin;
         }
-      },
+      }
     }
     if self.start == self.end {
       self.side = Side::End;
@@ -164,10 +165,10 @@ impl Selection {
     match self.side {
       Side::Start => {
         self.side = Side::End;
-      },
+      }
       Side::End => {
         self.side = Side::Start;
-      },
+      }
     }
     self.last_line_offset = None;
     Change::None
@@ -177,10 +178,10 @@ impl Selection {
     match self.side {
       Side::Start => {
         self.end = self.start;
-      },
+      }
       Side::End => {
         self.start = self.end;
-      },
+      }
     }
     Change::None
   }
@@ -271,4 +272,3 @@ fn step(max: usize, value: usize, delta: isize) -> usize {
     new_value
   }
 }
-
