@@ -4,30 +4,43 @@ use crate::{
 };
 use ropey::Rope;
 use std::{
-  fs::{OpenOptions, File},
-  io::{ErrorKind, Result, BufReader, BufWriter},
+  fs::{File, OpenOptions},
+  io::{BufReader, BufWriter, ErrorKind, Result},
 };
 
 #[derive(Clone)]
-pub struct Buffer {
-  pub filename: Option<String>,
+pub struct Snapshot {
   pub contents: Rope,
-  pub mode: Mode,
-  pub command: Option<Rope>,
   pub selections: Vec<Selection>,
   pub primary_selection: usize,
+}
+
+#[derive(Clone)]
+pub struct Buffer {
+  pub mode: Mode,
+  pub current: Snapshot,
+  pub history: Vec<Snapshot>,
+  pub history_index: usize,
+  pub filename: Option<String>,
+  pub command: Option<Rope>,
   pub preview_selections: Option<Vec<Selection>>,
 }
 
 impl Buffer {
   pub fn new() -> Buffer {
-    Buffer {
-      filename: None,
+    let current = Snapshot {
       contents: Rope::new(),
-      mode: Mode::Normal,
-      command: None,
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
+    };
+    let history = vec![current.clone()];
+    Buffer {
+      mode: Mode::Normal,
+      current,
+      history,
+      history_index: 0,
+      filename: None,
+      command: None,
       preview_selections: None,
     }
   }
@@ -38,17 +51,23 @@ impl Buffer {
       Ok(file) => {
         let reader = BufReader::new(file);
         Rope::from_reader(reader)
-      },
+      }
       Err(e) if e.kind() == ErrorKind::NotFound => Ok(Rope::new()),
       Err(e) => Err(e),
     }?;
-    Ok(Buffer {
-      filename: Some(filename),
+    let current = Snapshot {
       contents,
-      mode: Mode::Normal,
-      command: None,
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
+    };
+    let history = vec![current.clone()];
+    Ok(Buffer {
+      mode: Mode::Normal,
+      current,
+      history,
+      history_index: 0,
+      filename: Some(filename),
+      command: None,
       preview_selections: None,
     })
   }
@@ -63,7 +82,7 @@ impl Buffer {
         }
       };
       let writer = BufWriter::new(file);
-      match self.contents.write_to(writer) {
+      match self.current.contents.write_to(writer) {
         Ok(_) => {}
         Err(e) => {
           eprintln!("{}", e);
@@ -75,20 +94,57 @@ impl Buffer {
 
   pub fn primary_selection(&self) -> &Selection {
     self
+      .current
       .selections
-      .get(self.primary_selection)
+      .get(self.current.primary_selection)
       .expect("selections should always contain a primary selection")
   }
 
+  pub fn set_selections(&mut self, selections: Vec<Selection>) {
+    if selections.len() == 0 {
+      return;
+    }
+    self.current.selections = selections;
+    self.adjust_selections();
+  }
+
+  pub fn apply_operations(&mut self, ops: &[Op]) {
+    for op in ops.iter() {
+      for i in 0..self.current.selections.len() {
+        let selection = self
+          .current
+          .selections
+          .get_mut(i)
+          .expect("should be able to retrieve selection at index less than length");
+        let change = selection.apply(&mut self.current.contents, *op);
+        for j in i + 1..self.current.selections.len() {
+          let next_selection = self
+            .current
+            .selections
+            .get_mut(j)
+            .expect("should be able to retrieve selection at index less than length");
+          next_selection.adjust(&self.current.contents, change);
+        }
+      }
+    }
+    self.adjust_selections();
+  }
+
+  pub fn push_snapshot(&mut self) {
+    self.history.truncate(self.history_index + 1);
+    self.history.push(self.current.clone());
+    self.history_index = self.history_index + 1;
+  }
+
   fn adjust_selections(&mut self) {
-    self.selections.sort_by(|a, b| {
+    self.current.selections.sort_by(|a, b| {
       a.start()
         .partial_cmp(&b.start())
         .expect("selection bounds should be comparable")
     });
-    self.selections = {
+    self.current.selections = {
       let mut selections = vec![];
-      let mut selections_iter = self.selections.drain(..);
+      let mut selections_iter = self.current.selections.drain(..);
       let mut current = selections_iter.next();
       while let Some(current_value) = current {
         let mut next = selections_iter.next();
@@ -105,36 +161,8 @@ impl Buffer {
       }
       selections
     };
-    if self.primary_selection >= self.selections.len() {
-      self.primary_selection = self.selections.len().saturating_sub(1);
+    if self.current.primary_selection >= self.current.selections.len() {
+      self.current.primary_selection = self.current.selections.len().saturating_sub(1);
     }
-  }
-
-  pub fn apply_operations(&mut self, ops: &[Op]) {
-    for op in ops.iter() {
-      for i in 0..self.selections.len() {
-        let selection = self
-          .selections
-          .get_mut(i)
-          .expect("should be able to retrieve selection at index less than length");
-        let change = selection.apply(&mut self.contents, *op);
-        for j in i + 1..self.selections.len() {
-          let next_selection = self
-            .selections
-            .get_mut(j)
-            .expect("should be able to retrieve selection at index less than length");
-          next_selection.adjust(&self.contents, change);
-        }
-      }
-    }
-    self.adjust_selections();
-  }
-
-  pub fn set_selections(&mut self, selections: Vec<Selection>) {
-    if selections.len() == 0 {
-      return;
-    }
-    self.selections = selections;
-    self.adjust_selections();
   }
 }

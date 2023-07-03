@@ -2,7 +2,7 @@ use crate::{
   buffer::Buffer,
   key::{Key, Modifiers},
   screen::Screen,
-  window::Window,
+  window::Window, selection::Selection,
 };
 use crossterm::style::Color;
 
@@ -44,10 +44,13 @@ impl View {
     let (width, height) = self.screen.size();
     let (mut selection_iter, primary_selection) = match &buffer.preview_selections {
       Some(selections) => (selections.iter(), None),
-      None => (buffer.selections.iter(), Some(buffer.primary_selection())),
+      None => (
+        buffer.current.selections.iter(),
+        Some(buffer.primary_selection()),
+      ),
     };
     let mut current_selection = selection_iter.next();
-    let start_index = window.from_scroll_position(&buffer.contents, 0, 0);
+    let start_index = window.from_scroll_position(&buffer.current.contents, 0, 0);
     while let Some(selection) = current_selection {
       if selection.end() >= start_index {
         break;
@@ -55,6 +58,7 @@ impl View {
       current_selection = selection_iter.next();
     }
     let lines = buffer
+      .current
       .contents
       .get_lines_at(window.scroll_top)
       .into_iter()
@@ -70,47 +74,15 @@ impl View {
         .take(width)
         .enumerate();
       for (col, ch) in chars {
-        let index = window.from_scroll_position(&buffer.contents, row, col);
+        let index = window.from_scroll_position(&buffer.current.contents, row, col);
         while let Some(selection) = current_selection {
           if index <= selection.end() {
             break;
           }
           current_selection = selection_iter.next();
         }
-        let mut is_selection = false;
-        let mut is_primary = false;
-        let mut is_cursor = false;
-        if let Some(selection) = current_selection {
-          if index >= selection.start() && index <= selection.end() {
-            is_selection = true;
-          }
-          if let Some(primary_selection) = primary_selection {
-            if selection.start() == primary_selection.start() {
-              is_primary = true;
-            }
-          }
-          is_cursor = index == selection.cursor();
-        }
-        let mut bg = self.ramp_0_color;
-        let mut fg = self.ramp_2_color;
-        if is_selection {
-          if is_primary {
-            if is_cursor {
-              bg = self.accent_color;
-            } else {
-              bg = self.ramp_2_color;
-            };
-            fg = self.ramp_0_color;
-          } else {
-            if is_cursor {
-              bg = self.ramp_2_color;
-              fg = self.ramp_0_color;
-            } else {
-              bg = self.ramp_1_color;
-              fg = self.ramp_2_color;
-            }
-          }
-        }
+        let (is_selection, is_primary, is_cursor) = Self::properties(index, current_selection, primary_selection);
+        let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
         let ch = match ch {
           '\n' => {
             if !is_selection {
@@ -124,18 +96,22 @@ impl View {
         self.screen.draw(row, col, ch, bg, fg);
       }
     }
-    if let Some(selection) = current_selection {
-      if selection.cursor() == buffer.contents.len_chars() {
-        let buffer_end = window.to_scroll_position(&buffer.contents, buffer.contents.len_chars());
-        if let Some((row, col)) = buffer_end {
+    let buffer_end = window.to_scroll_position(
+      &buffer.current.contents,
+      buffer.current.contents.len_chars(),
+    );
+    if let Some((row, col)) = buffer_end {
+      let index = buffer.current.contents.len_chars();
+      let (is_selection, is_primary, is_cursor) = Self::properties(index, current_selection, primary_selection);
+      if is_selection {
+        let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
           self.screen.draw(
             row,
             col,
             self.end_of_file_char,
-            self.accent_color,
-            self.ramp_0_color,
+            bg,
+            fg,
           );
-        }
       }
     }
     let status = if let Some(command) = &buffer.command {
@@ -144,8 +120,8 @@ impl View {
       match primary_selection {
         Some(primary_selection) => {
           let cursor = primary_selection.cursor();
-          let row = buffer.contents.char_to_line(cursor);
-          let col = cursor.saturating_sub(buffer.contents.line_to_char(row));
+          let row = buffer.current.contents.char_to_line(cursor);
+          let col = cursor.saturating_sub(buffer.current.contents.line_to_char(row));
           format!(" {}:{} ", row, col)
         }
         None => "".to_string(),
@@ -161,5 +137,56 @@ impl View {
       );
     }
     self.screen.present();
+  }
+
+  fn properties(
+    index: usize,
+    current_selection: Option<&Selection>,
+    primary_selection: Option<&Selection>,
+  ) -> (bool, bool, bool) {
+    let mut is_selection = false;
+    let mut is_primary = false;
+    let mut is_cursor = false;
+    if let Some(selection) = current_selection {
+      if index >= selection.start() && index <= selection.end() {
+        is_selection = true;
+      }
+      if let Some(primary_selection) = primary_selection {
+        if selection.start() == primary_selection.start() {
+          is_primary = true;
+        }
+      }
+      is_cursor = index == selection.cursor();
+    }
+    (is_selection, is_primary, is_cursor)
+  }
+
+  fn style(
+    &self,
+    is_selection: bool,
+    is_primary: bool,
+    is_cursor: bool,
+  ) -> (Color, Color) {
+    let mut bg = self.ramp_0_color;
+    let mut fg = self.ramp_2_color;
+    if is_selection {
+      if is_primary {
+        if is_cursor {
+          bg = self.accent_color;
+        } else {
+          bg = self.ramp_2_color;
+        };
+        fg = self.ramp_0_color;
+      } else {
+        if is_cursor {
+          bg = self.ramp_2_color;
+          fg = self.ramp_0_color;
+        } else {
+          bg = self.ramp_1_color;
+          fg = self.ramp_2_color;
+        }
+      }
+    }
+    (bg, fg)
   }
 }

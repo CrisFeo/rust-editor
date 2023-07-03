@@ -48,11 +48,19 @@ pub fn update_mode_filter(
         .expect("command should always be set in filter mode")
         .to_string();
       let selections = match settings.reject {
-        true => reject(&buffer.contents, &buffer.selections, &command),
-        false => accept(&buffer.contents, &buffer.selections, &command),
+        true => reject(
+          &buffer.current.contents,
+          &buffer.current.selections,
+          &command,
+        ),
+        false => accept(
+          &buffer.current.contents,
+          &buffer.current.selections,
+          &command,
+        ),
       };
       if let Some(selections) = selections {
-        buffer.primary_selection = selections.len().saturating_sub(1);
+        buffer.current.primary_selection = selections.len().saturating_sub(1);
         buffer.set_selections(selections);
       }
       buffer.command = None;
@@ -80,15 +88,23 @@ fn update_preview(settings: FilterSettings, buffer: &mut Buffer) {
     .expect("command should always be set in filter mode")
     .to_string();
   let selections = match settings.reject {
-    true => reject(&buffer.contents, &buffer.selections, &command),
-    false => accept(&buffer.contents, &buffer.selections, &command),
+    true => reject(
+      &buffer.current.contents,
+      &buffer.current.selections,
+      &command,
+    ),
+    false => accept(
+      &buffer.current.contents,
+      &buffer.current.selections,
+      &command,
+    ),
   };
   buffer.preview_selections = selections;
 }
 
 fn accept(contents: &Rope, selections: &Vec<Selection>, pattern: &str) -> Option<Vec<Selection>> {
   if pattern.is_empty() {
-    return None
+    return None;
   }
   let pattern = format!("(?ms){}", pattern);
   match Regex::new(&pattern) {
@@ -107,7 +123,7 @@ fn accept(contents: &Rope, selections: &Vec<Selection>, pattern: &str) -> Option
 
 fn reject(contents: &Rope, selections: &Vec<Selection>, pattern: &str) -> Option<Vec<Selection>> {
   if pattern.is_empty() {
-    return None
+    return None;
   }
   let pattern = format!("(?ms){}", pattern);
   match Regex::new(&pattern) {

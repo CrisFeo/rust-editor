@@ -14,7 +14,10 @@ pub fn update_mode_insert(
 ) -> Option<Mode> {
   use crate::key::Key::*;
   match key {
-    Esc => return Some(Mode::Normal),
+    Esc => {
+      buffer.push_snapshot();
+      return Some(Mode::Normal);
+    }
     Backspace => buffer.apply_operations(&[Op::Remove]),
     Tab => buffer.apply_operations(&[Op::Insert(' '), Op::Insert(' ')]),
     Enter => buffer.apply_operations(&[Op::Insert('\n')]),

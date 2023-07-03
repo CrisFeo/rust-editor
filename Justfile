@@ -6,12 +6,13 @@ run *ARGS:
 
 watch:
   #!/usr/bin/env bash
-  set -euxo pipefail
+  set -Eeuo pipefail
   cleanup() {
     reset
   }
   trap 'cleanup' EXIT
   watchexec     \
+    --clear     \
     --restart   \
     --watch src \
     --exts rs   \

@@ -27,7 +27,7 @@ fn main() {
       Err(e) => {
         eprintln!("{}", e);
         exit(1);
-      },
+      }
     };
     let mut view = View::new();
     let mut window = Window::new();
@@ -39,7 +39,10 @@ fn main() {
         None => break,
       };
       window.set_size(view.buffer_size());
-      window.scroll_into_view(&buffer.contents, buffer.primary_selection().cursor());
+      window.scroll_into_view(
+        &buffer.current.contents,
+        buffer.primary_selection().cursor(),
+      );
     }
   });
   if let Err(e) = result {
