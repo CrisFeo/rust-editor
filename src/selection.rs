@@ -77,7 +77,7 @@ impl Selection {
 
   pub fn scan(&self, regex: &Regex, contents: &Rope) -> Vec<(usize, usize)> {
     let start_byte = contents.char_to_byte(self.start);
-    let end = contents.len_chars();
+    let end = self.end.saturating_add(1).min(contents.len_chars());
     let slice: std::borrow::Cow<str> = contents.slice(self.start..end).into();
     regex
       .find_iter(&slice)

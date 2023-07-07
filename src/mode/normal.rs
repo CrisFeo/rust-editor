@@ -27,13 +27,13 @@ pub fn update_mode_normal(
     Char('J') => buffer.apply_operations(&[Op::MoveByLine(1)]),
     Char('K') => buffer.apply_operations(&[Op::MoveByLine(-1)]),
     Char('L') => buffer.apply_operations(&[Op::MoveByChar(1)]),
-    Char('p') => page(buffer, window, 1),
-    Char('P') => page(buffer, window, -1),
     Char('b') => buffer.apply_operations(&[Op::Swap]),
     Char('n') => buffer.apply_operations(&[Op::Collapse]),
+    Char('p') => page(buffer, window, 1),
+    Char('P') => page(buffer, window, -1),
 
     // Selections
-    Char('e') => buffer.set_selections(vec![Selection::new_at_end(
+    Char('u') => buffer.set_selections(vec![Selection::new_at_end(
       0,
       buffer.current.contents.len_chars(),
     )]),
@@ -41,18 +41,18 @@ pub fn update_mode_normal(
       buffer.current.primary_selection = wrap_add(
         buffer.current.selections.len(),
         buffer.current.primary_selection,
-        -1,
-      )
-    }
-    Char('u') => {
-      buffer.current.primary_selection = wrap_add(
-        buffer.current.selections.len(),
-        buffer.current.primary_selection,
         1,
       )
     }
-    Char('r') => buffer.set_selections(vec![*buffer.primary_selection()]),
-    Char('R') => {
+    Char('Y') => {
+      buffer.current.primary_selection = wrap_add(
+        buffer.current.selections.len(),
+        buffer.current.primary_selection,
+        -1,
+      )
+    }
+    Char('t') => buffer.set_selections(vec![*buffer.primary_selection()]),
+    Char('T') => {
       let selections = buffer
         .current
         .selections
@@ -76,15 +76,7 @@ pub fn update_mode_normal(
       buffer.push_snapshot();
     }
     Char('a') => {
-      buffer.apply_operations(&[Op::MoveByChar(1), Op::Collapse]);
-      return Some(Mode::Insert);
-    }
-    Char('A') => {
       buffer.apply_operations(&[Op::Collapse]);
-      return Some(Mode::Insert);
-    }
-    Char('c') => {
-      buffer.apply_operations(&[Op::RemoveAll]);
       return Some(Mode::Insert);
     }
     Char('z') => {
