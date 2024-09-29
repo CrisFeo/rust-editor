@@ -98,11 +98,9 @@ fn accept(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Ve
   let regex = Regex::new(pattern)?;
   let mut new_selections = vec![];
   for selection in selections.iter() {
-    let result = regex.find(
-      contents,
-      selection.start(),
-      selection.end(),
-    ).next();
+    let result = regex
+      .find(contents, selection.start(), selection.end())
+      .next();
     if result.is_some() {
       new_selections.push(*selection);
     }
@@ -117,11 +115,9 @@ fn reject(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Ve
   let regex = Regex::new(pattern)?;
   let mut new_selections = vec![];
   for selection in selections.iter() {
-    let result = regex.find(
-      contents,
-      selection.start(),
-      selection.end(),
-    ).next();
+    let result = regex
+      .find(contents, selection.start(), selection.end())
+      .next();
     if result.is_none() {
       new_selections.push(*selection);
     }

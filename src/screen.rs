@@ -1,7 +1,7 @@
 use crate::*;
-use crossterm::{cursor, execute, queue, terminal};
 use crossterm::event::{read, Event, KeyCode, KeyModifiers};
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
+use crossterm::{cursor, execute, queue, terminal};
 use gag::Hold;
 use std::io::{self, BufWriter, Stdout, Write};
 

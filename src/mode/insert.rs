@@ -9,7 +9,6 @@ impl Insert {
   }
 }
 
-
 impl Mode for Insert {
   fn update(
     &mut self,

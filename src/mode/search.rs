@@ -8,7 +8,7 @@ pub struct Search {
 }
 
 impl Search {
-  pub fn switch_to(reverse:bool) -> UpdateCommand {
+  pub fn switch_to(reverse: bool) -> UpdateCommand {
     let mode = Self {
       command: Rope::new(),
       reverse,
@@ -98,11 +98,14 @@ fn forward(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<V
   let regex = Regex::new(pattern)?;
   let mut new_selections = vec![];
   for selection in selections.iter() {
-    let result = regex.find(
-      contents,
-      selection.cursor(),
-      contents.len_chars().saturating_sub(1),
-    ).next();
+    let contents_end = contents.len_chars().saturating_sub(1);
+    let result = regex
+      .find(
+        contents,
+        selection.cursor().saturating_add(1).min(contents_end),
+        contents_end,
+      )
+      .next();
     let new_selection = match result {
       Some((start, end)) => move_cursor(*selection, start, end),
       None => *selection,
@@ -119,11 +122,9 @@ fn reverse(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<V
   let regex = Regex::new(pattern)?;
   let mut new_selections = vec![];
   for selection in selections.iter() {
-    let result = regex.find(
-      contents,
-      0,
-      selection.cursor(),
-    ).last();
+    let result = regex
+      .find(contents, 0, selection.cursor().saturating_sub(1).max(0))
+      .last();
     let new_selection = match result {
       Some((start, end)) => move_cursor(*selection, start, end),
       None => *selection,

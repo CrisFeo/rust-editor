@@ -1,6 +1,6 @@
 use rust_editor::*;
-use std::process::exit;
 use std::panic::{catch_unwind, resume_unwind};
+use std::process::exit;
 
 fn main() {
   let filename = std::env::args().nth(1);
@@ -25,7 +25,7 @@ fn main() {
       let result = mode.update(&mut buffer, &mut window, modifiers, key);
       match result {
         UpdateCommand::Switch(next_mode) => mode = next_mode,
-        UpdateCommand::None => {},
+        UpdateCommand::None => {}
         UpdateCommand::Quit => break,
       }
       window.set_size(view.buffer_size());

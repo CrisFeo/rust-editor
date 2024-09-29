@@ -9,7 +9,7 @@ pub struct Split {
 
 impl Split {
   pub fn switch_to(reject: bool) -> UpdateCommand {
-    let mode =Self {
+    let mode = Self {
       command: Rope::new(),
       reject,
     };
@@ -18,7 +18,7 @@ impl Split {
 }
 
 impl Mode for Split {
-   fn update(
+  fn update(
     &mut self,
     buffer: &mut Buffer,
     _window: &mut Window,
@@ -98,11 +98,7 @@ fn accept(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Ve
   let regex = Regex::new(pattern)?;
   let mut new_selections = vec![];
   for selection in selections.iter() {
-    let results = regex.find(
-      contents,
-      selection.start(),
-      selection.end(),
-    );
+    let results = regex.find(contents, selection.start(), selection.end());
     for (start, end) in results {
       new_selections.push(Selection::new_at_end(start, end));
     }
@@ -118,11 +114,7 @@ fn reject(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Ve
   let mut new_selections = vec![];
   for selection in selections.iter() {
     let mut next_start = selection.start();
-    let results = regex.find(
-      contents,
-      selection.start(),
-      selection.end(),
-    );
+    let results = regex.find(contents, selection.start(), selection.end());
     for (match_start, match_end) in results {
       if match_start > selection.start() {
         new_selections.push(Selection::new_at_end(
