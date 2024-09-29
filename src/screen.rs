@@ -1,11 +1,7 @@
-use crate::key::{Key, Modifiers};
-use crossterm::{
-  cursor,
-  event::{read, Event, KeyCode, KeyModifiers},
-  execute, queue,
-  style::{Color, Print, SetBackgroundColor, SetForegroundColor},
-  terminal,
-};
+use crate::*;
+use crossterm::{cursor, execute, queue, terminal};
+use crossterm::event::{read, Event, KeyCode, KeyModifiers};
+use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
 use gag::Hold;
 use std::io::{self, BufWriter, Stdout, Write};
 
@@ -24,7 +20,7 @@ pub struct Screen {
 }
 
 impl Screen {
-  pub fn new() -> Self {
+  pub fn create() -> Self {
     let held_stderr = gag::Hold::stderr().expect("should gag stderr");
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
     execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
@@ -42,7 +38,7 @@ impl Screen {
     for _ in 0..(width * height) {
       buffer.push(Some(Cell(' ', Color::Black, Color::White)));
     }
-    Screen {
+    Self {
       _held_stderr: held_stderr,
       output,
       buffer,
@@ -166,6 +162,7 @@ impl Screen {
 
 impl Drop for Screen {
   fn drop(&mut self) {
+    execute!(self.output, cursor::Show).expect("should show cursor");
     terminal::disable_raw_mode().expect("should disable raw mode");
     execute!(self.output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");
   }

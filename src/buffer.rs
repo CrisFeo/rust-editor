@@ -1,12 +1,7 @@
-use crate::{
-  mode::Mode,
-  selection::{Op, Selection},
-};
+use crate::*;
 use ropey::Rope;
-use std::{
-  fs::{File, OpenOptions},
-  io::{BufReader, BufWriter, ErrorKind, Result},
-};
+use std::fs::{File, OpenOptions};
+use std::io::{BufReader, BufWriter, ErrorKind, Result};
 
 #[derive(Clone)]
 pub struct Snapshot {
@@ -17,35 +12,31 @@ pub struct Snapshot {
 
 #[derive(Clone)]
 pub struct Buffer {
-  pub mode: Mode,
   pub current: Snapshot,
   pub history: Vec<Snapshot>,
   pub history_index: usize,
   pub filename: Option<String>,
-  pub command: Option<Rope>,
   pub preview_selections: Option<Vec<Selection>>,
 }
 
 impl Buffer {
-  pub fn new() -> Buffer {
+  pub fn new_scratch() -> Self {
     let current = Snapshot {
       contents: Rope::new(),
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
     };
     let history = vec![current.clone()];
-    Buffer {
-      mode: Mode::Normal,
+    Self {
       current,
       history,
       history_index: 0,
       filename: None,
-      command: None,
       preview_selections: None,
     }
   }
 
-  pub fn new_from_file(filename: String) -> Result<Buffer> {
+  pub fn new_from_file(filename: String) -> Result<Self> {
     let file = OpenOptions::new().read(true).open(&filename);
     let contents = match file {
       Ok(file) => {
@@ -61,13 +52,11 @@ impl Buffer {
       primary_selection: 0,
     };
     let history = vec![current.clone()];
-    Ok(Buffer {
-      mode: Mode::Normal,
+    Ok(Self {
       current,
       history,
       history_index: 0,
       filename: Some(filename),
-      command: None,
       preview_selections: None,
     })
   }
@@ -84,10 +73,7 @@ impl Buffer {
       let writer = BufWriter::new(file);
       match self.current.contents.write_to(writer) {
         Ok(_) => {}
-        Err(e) => {
-          eprintln!("{}", e);
-          return;
-        }
+        Err(e) => eprintln!("{}", e),
       };
     }
   }
@@ -101,7 +87,7 @@ impl Buffer {
   }
 
   pub fn set_selections(&mut self, selections: Vec<Selection>) {
-    if selections.len() == 0 {
+    if selections.is_empty() {
       return;
     }
     self.current.selections = selections;
@@ -133,7 +119,7 @@ impl Buffer {
   pub fn push_snapshot(&mut self) {
     self.history.truncate(self.history_index + 1);
     self.history.push(self.current.clone());
-    self.history_index = self.history_index + 1;
+    self.history_index += 1;
   }
 
   fn adjust_selections(&mut self) {

@@ -1,5 +1,6 @@
-use regex::Regex;
 use ropey::Rope;
+use std::cmp::Ordering;
+use std::mem::swap;
 
 #[derive(Debug, Copy, Clone)]
 pub enum Op {
@@ -75,34 +76,13 @@ impl Selection {
     self.end.saturating_sub(self.start) + 1
   }
 
-  pub fn scan(&self, regex: &Regex, contents: &Rope) -> Vec<(usize, usize)> {
-    let start_byte = contents.char_to_byte(self.start);
-    let end = self.end.saturating_add(1).min(contents.len_chars());
-    let slice: std::borrow::Cow<str> = contents.slice(self.start..end).into();
-    regex
-      .find_iter(&slice)
-      .map(|m| {
-        let start = start_byte.saturating_add(m.start());
-        let start = contents.byte_to_char(start);
-        let end = start_byte.saturating_add(m.end());
-        let mut end = contents.byte_to_char(end);
-        if end > start {
-          end = end.saturating_sub(1);
-        }
-        (start, end)
-      })
-      .collect()
-  }
-
   pub fn try_merge(&self, other: &Self) -> Option<Selection> {
     if other.start < self.start {
       other.try_merge(self)
+    } else if self.end >= other.start {
+      Some(Selection::new_at_end(self.start, self.end.max(other.end)))
     } else {
-      if self.end >= other.start {
-        Some(Selection::new_at_end(self.start, self.end.max(other.end)))
-      } else {
-        None
-      }
+      None
     }
   }
 
@@ -110,13 +90,13 @@ impl Selection {
     let change = match op {
       Op::Swap => self.swap(),
       Op::Collapse => self.collapse(),
-      Op::MoveByChar(delta) => self.move_by_char(&contents, delta),
-      Op::MoveByLine(delta) => self.move_by_line(&contents, delta),
+      Op::MoveByChar(delta) => self.move_by_char(contents, delta),
+      Op::MoveByLine(delta) => self.move_by_line(contents, delta),
       Op::Insert(ch) => self.insert(contents, ch),
       Op::Remove => self.remove(contents),
       Op::RemoveAll => self.remove_all(contents),
     };
-    self.adjust(&contents, change);
+    self.adjust(contents, change);
     change
   }
 
@@ -148,16 +128,16 @@ impl Selection {
         }
       }
     }
-    if self.start == self.end {
-      self.side = Side::End;
-    } else if self.start > self.end {
-      let tmp = self.start;
-      self.start = self.end;
-      self.end = tmp;
-      self.side = match self.side {
-        Side::Start => Side::End,
-        Side::End => Side::Start,
-      };
+    match self.start.cmp(&self.end) {
+      Ordering::Less => {}
+      Ordering::Equal => self.side = Side::End,
+      Ordering::Greater => {
+        swap(&mut self.start, &mut self.end);
+        self.side = match self.side {
+          Side::Start => Side::End,
+          Side::End => Side::Start,
+        };
+      }
     }
   }
 

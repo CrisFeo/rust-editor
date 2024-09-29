@@ -1,9 +1,4 @@
-use crate::{
-  buffer::Buffer,
-  key::{Key, Modifiers},
-  screen::Screen,
-  window::Window, selection::Selection,
-};
+use crate::*;
 use crossterm::style::Color;
 
 pub struct View {
@@ -18,9 +13,9 @@ pub struct View {
 
 impl View {
   #[rustfmt::skip]
-  pub fn new() -> Self {
-    View {
-      screen: Screen::new(),
+  pub fn create() -> Self {
+    Self {
+      screen: Screen::create(),
       accent_color: Color::Rgb{ r: 95,  g: 135, b: 0   },
       ramp_0_color: Color::Rgb{ r: 0,   g: 0,   b: 0   },
       ramp_1_color: Color::Rgb{ r: 78,  g: 78,  b: 78  },
@@ -39,7 +34,7 @@ impl View {
     self.screen.poll()
   }
 
-  pub fn render(&mut self, buffer: &Buffer, window: &Window) {
+  pub fn render(&mut self, mode: &dyn Mode, buffer: &Buffer, window: &Window) {
     self.screen.clear();
     let (width, height) = self.screen.size();
     let (mut selection_iter, primary_selection) = match &buffer.preview_selections {
@@ -50,7 +45,7 @@ impl View {
       ),
     };
     let mut current_selection = selection_iter.next();
-    let start_index = window.from_scroll_position(&buffer.current.contents, 0, 0);
+    let start_index = window.to_index(&buffer.current.contents, 0, 0);
     while let Some(selection) = current_selection {
       if selection.end() >= start_index {
         break;
@@ -74,14 +69,15 @@ impl View {
         .take(width)
         .enumerate();
       for (col, ch) in chars {
-        let index = window.from_scroll_position(&buffer.current.contents, row, col);
+        let index = window.to_index(&buffer.current.contents, row, col);
         while let Some(selection) = current_selection {
           if index <= selection.end() {
             break;
           }
           current_selection = selection_iter.next();
         }
-        let (is_selection, is_primary, is_cursor) = Self::properties(index, current_selection, primary_selection);
+        let (is_selection, is_primary, is_cursor) =
+          Self::properties(index, current_selection, primary_selection);
         let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
         let ch = match ch {
           '\n' => {
@@ -102,31 +98,33 @@ impl View {
     );
     if let Some((row, col)) = buffer_end {
       let index = buffer.current.contents.len_chars();
-      let (is_selection, is_primary, is_cursor) = Self::properties(index, current_selection, primary_selection);
+      let (is_selection, is_primary, is_cursor) =
+        Self::properties(index, current_selection, primary_selection);
       if is_selection {
         let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
-          self.screen.draw(
-            row,
-            col,
-            self.end_of_file_char,
-            bg,
-            fg,
-          );
+        self.screen.draw(row, col, self.end_of_file_char, bg, fg);
       }
     }
-    let status = if let Some(command) = &buffer.command {
-      format!("> {}", command.to_string())
-    } else {
-      match primary_selection {
+    let status_left = mode.status();
+    let status_right = {
+      let cursor_location = match primary_selection {
         Some(primary_selection) => {
           let cursor = primary_selection.cursor();
           let row = buffer.current.contents.char_to_line(cursor);
           let col = cursor.saturating_sub(buffer.current.contents.line_to_char(row));
-          format!(" {}:{} ", row, col)
+          format!(" {}:{}", row, col)
         }
         None => "".to_string(),
-      }
+      };
+      let buffer_name = match &buffer.filename {
+        Some(filename) => format!(" {}", filename),
+        None => "".to_string(),
+      };
+      format!("{}{}", cursor_location, buffer_name)
     };
+    let status_gap_size = width - (status_left.len() + status_right.len());
+    let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
+    let status = format!("{}{}{}", status_left, status_gap, status_right);
     for (i, ch) in status.chars().enumerate() {
       self.screen.draw(
         height.saturating_sub(1),
@@ -161,12 +159,7 @@ impl View {
     (is_selection, is_primary, is_cursor)
   }
 
-  fn style(
-    &self,
-    is_selection: bool,
-    is_primary: bool,
-    is_cursor: bool,
-  ) -> (Color, Color) {
+  fn style(&self, is_selection: bool, is_primary: bool, is_cursor: bool) -> (Color, Color) {
     let mut bg = self.ramp_0_color;
     let mut fg = self.ramp_2_color;
     if is_selection {
@@ -177,14 +170,12 @@ impl View {
           bg = self.ramp_2_color;
         };
         fg = self.ramp_0_color;
+      } else if is_cursor {
+        bg = self.ramp_2_color;
+        fg = self.ramp_0_color;
       } else {
-        if is_cursor {
-          bg = self.ramp_2_color;
-          fg = self.ramp_0_color;
-        } else {
-          bg = self.ramp_1_color;
-          fg = self.ramp_2_color;
-        }
+        bg = self.ramp_1_color;
+        fg = self.ramp_2_color;
       }
     }
     (bg, fg)

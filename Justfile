@@ -1,19 +1,14 @@
 list:
-  just --list --unsorted
-
-run *ARGS:
-  cargo run {{ARGS}}
+  just -l -u
 
 watch:
-  #!/usr/bin/env bash
-  set -Eeuo pipefail
-  cleanup() {
-    reset
-  }
-  trap 'cleanup' EXIT
-  watchexec     \
-    --clear     \
-    --restart   \
-    --watch src \
-    --exts rs   \
-    'cargo check --color always 2>&1 | less -K -R'
+  bacon clippy
+
+format:
+  cargo fmt
+
+run ARGS:
+  RUST_BACKTRACE=1 cargo run --color always {{ARGS}} 2> logs.txt
+
+logs:
+  less -R logs.txt

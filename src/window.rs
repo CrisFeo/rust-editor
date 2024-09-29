@@ -1,5 +1,6 @@
 use ropey::Rope;
 
+#[derive(Default)]
 pub struct Window {
   pub scroll_top: usize,
   pub scroll_left: usize,
@@ -8,15 +9,6 @@ pub struct Window {
 }
 
 impl Window {
-  pub fn new() -> Window {
-    Window {
-      scroll_top: 0,
-      scroll_left: 0,
-      width: 0,
-      height: 0,
-    }
-  }
-
   pub fn set_size(&mut self, size: (usize, usize)) {
     let (width, height) = size;
     self.width = width;
@@ -37,7 +29,7 @@ impl Window {
     Some((row, col))
   }
 
-  pub fn from_scroll_position(&self, contents: &Rope, row: usize, col: usize) -> usize {
+  pub fn to_index(&self, contents: &Rope, row: usize, col: usize) -> usize {
     let row = self.scroll_top + row;
     let col = self.scroll_left + col;
     contents.line_to_char(row) + col

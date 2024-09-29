@@ -10,32 +10,22 @@ pub use normal::*;
 pub use search::*;
 pub use split::*;
 
-use crate::{
-  buffer::Buffer,
-  key::{Key, Modifiers},
-  window::Window,
-};
+use crate::*;
 
-#[derive(Debug, Copy, Clone)]
-pub enum Mode {
-  Normal,
-  Insert,
-  Split(SplitSettings),
-  Search(SearchSettings),
-  Filter(FilterSettings),
+pub enum UpdateCommand {
+  Switch(Box<dyn Mode>),
+  Quit,
+  None,
 }
 
-pub fn update_mode(
-  buffer: &mut Buffer,
-  window: &mut Window,
-  modifiers: Modifiers,
-  key: Key,
-) -> Option<Mode> {
-  match &buffer.mode {
-    Mode::Normal => update_mode_normal(buffer, window, modifiers, key),
-    Mode::Insert => update_mode_insert(buffer, window, modifiers, key),
-    Mode::Split(settings) => update_mode_split(*settings, buffer, window, modifiers, key),
-    Mode::Search(settings) => update_mode_search(*settings, buffer, window, modifiers, key),
-    Mode::Filter(settings) => update_mode_filter(*settings, buffer, window, modifiers, key),
-  }
+pub trait Mode {
+  fn update(
+    &mut self,
+    buffer: &mut Buffer,
+    window: &mut Window,
+    modifiers: Modifiers,
+    key: Key,
+  ) -> UpdateCommand;
+
+  fn status(&self) -> String;
 }

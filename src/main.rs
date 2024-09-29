@@ -1,26 +1,13 @@
-extern crate crossterm;
-extern crate gag;
-extern crate regex;
-extern crate ropey;
-
-mod buffer;
-mod key;
-mod mode;
-mod screen;
-mod selection;
-mod view;
-mod window;
-
+use rust_editor::*;
 use std::process::exit;
-
-use crate::{buffer::Buffer, mode::update_mode, view::View, window::Window};
+use std::panic::{catch_unwind, resume_unwind};
 
 fn main() {
   let filename = std::env::args().nth(1);
-  let result = std::panic::catch_unwind(|| {
+  let result = catch_unwind(|| {
     let buffer = match filename {
       Some(filename) => Buffer::new_from_file(filename),
-      None => Ok(Buffer::new()),
+      None => Ok(Buffer::new_scratch()),
     };
     let mut buffer = match buffer {
       Ok(buffer) => buffer,
@@ -29,15 +16,18 @@ fn main() {
         exit(1);
       }
     };
-    let mut view = View::new();
-    let mut window = Window::new();
+    let mut mode: Box<dyn Mode> = Box::new(Normal);
+    let mut view = View::create();
+    let mut window = Window::default();
     loop {
-      view.render(&buffer, &window);
+      view.render(mode.as_ref(), &buffer, &window);
       let (modifiers, key) = view.poll();
-      match update_mode(&mut buffer, &mut window, modifiers, key) {
-        Some(new_mode) => buffer.mode = new_mode,
-        None => break,
-      };
+      let result = mode.update(&mut buffer, &mut window, modifiers, key);
+      match result {
+        UpdateCommand::Switch(next_mode) => mode = next_mode,
+        UpdateCommand::None => {},
+        UpdateCommand::Quit => break,
+      }
       window.set_size(view.buffer_size());
       window.scroll_into_view(
         &buffer.current.contents,
@@ -46,6 +36,6 @@ fn main() {
     }
   });
   if let Err(e) = result {
-    std::panic::resume_unwind(e);
+    resume_unwind(e);
   }
 }
