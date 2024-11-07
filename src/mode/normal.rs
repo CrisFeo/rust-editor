@@ -90,7 +90,7 @@ impl Mode for Normal {
           let next = buffer
             .history
             .get(buffer.history_index)
-            .expect("history should always have at least one entry");
+            .expect("history should always have at least one entry when undoing");
           buffer.current = next.clone();
         }
       }
@@ -100,7 +100,7 @@ impl Mode for Normal {
           let next = buffer
             .history
             .get(buffer.history_index)
-            .expect("history should always have at least one entry");
+            .expect("history should always have at least one entry when redoing");
           buffer.current = next.clone();
         }
       }

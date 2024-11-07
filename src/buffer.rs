@@ -101,14 +101,14 @@ impl Buffer {
           .current
           .selections
           .get_mut(i)
-          .expect("should be able to retrieve selection at index less than length");
+          .expect("should be able to retrieve selection at index less than length when applying operation");
         let change = selection.apply(&mut self.current.contents, *op);
         for j in i + 1..self.current.selections.len() {
           let next_selection = self
             .current
             .selections
             .get_mut(j)
-            .expect("should be able to retrieve selection at index less than length");
+            .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
           next_selection.adjust(&self.current.contents, change);
         }
       }

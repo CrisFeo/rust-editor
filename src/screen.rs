@@ -26,10 +26,10 @@ impl Screen {
     execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
     terminal::enable_raw_mode().expect("should enable raw mode");
     queue!(output, cursor::Hide).expect("should hide cursor");
-    queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor");
-    queue!(output, SetBackgroundColor(Color::Black)).expect("should set background color");
-    queue!(output, SetForegroundColor(Color::White)).expect("should set foreground color");
-    output.flush().expect("should flush queued output");
+    queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor when setting up");
+    queue!(output, SetBackgroundColor(Color::Black)).expect("should set background color when setting up");
+    queue!(output, SetForegroundColor(Color::White)).expect("should set foreground color when setting up");
+    output.flush().expect("should flush queued output when setting up");
     let (width, height) = {
       let (width, height) = terminal::size().expect("should retrieve terminal size");
       (width as usize, height as usize)
@@ -156,7 +156,7 @@ impl Screen {
         }
       }
     }
-    self.output.flush().expect("should flush queued output");
+    self.output.flush().expect("should flush queued output when presenting");
   }
 }
 
