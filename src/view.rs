@@ -37,7 +37,7 @@ impl View {
   pub fn render(&mut self, mode: &dyn Mode, buffer: &Buffer, window: &Window) {
     self.screen.clear();
     let (width, height) = self.screen.size();
-    let (mut selection_iter, primary_selection) = match &buffer.preview_selections {
+    let (mut selection_iter, primary_selection) = match &mode.preview_selections() {
       Some(selections) => (selections.iter(), None),
       None => (
         buffer.current.selections.iter(),

@@ -1,13 +1,13 @@
 mod filter;
 mod insert;
 mod normal;
-mod search;
+mod seek;
 mod split;
 
 pub use filter::*;
 pub use insert::*;
 pub use normal::*;
-pub use search::*;
+pub use seek::*;
 pub use split::*;
 
 use crate::*;
@@ -27,5 +27,7 @@ pub trait Mode {
     key: Key,
   ) -> UpdateCommand;
 
-  fn status(&self) -> String;
+  fn status<'a>(&self) -> CowStr<'a>;
+
+  fn preview_selections(&self) -> Option<&Vec<Selection>>;
 }

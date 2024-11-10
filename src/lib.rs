@@ -15,3 +15,6 @@ pub use screen::*;
 pub use selection::*;
 pub use view::*;
 pub use window::*;
+
+
+pub type CowStr<'a> = std::borrow::Cow<'a, str>;

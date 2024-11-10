@@ -2,16 +2,25 @@ use crate::*;
 use ropey::Rope;
 
 #[derive(Debug, Clone)]
+enum ModeResult {
+  Empty,
+  Error,
+  Ok(Vec<Selection>),
+}
+
+#[derive(Debug, Clone)]
 pub struct Filter {
-  pub command: Rope,
-  pub reject: bool,
+  reject: bool,
+  command: Rope,
+  preview: ModeResult,
 }
 
 impl Filter {
   pub fn switch_to(reject: bool) -> UpdateCommand {
     let mode = Self {
-      command: Rope::new(),
       reject,
+      command: Rope::new(),
+      preview: ModeResult::Empty,
     };
     UpdateCommand::Switch(Box::new(mode))
   }
@@ -27,10 +36,7 @@ impl Mode for Filter {
   ) -> UpdateCommand {
     use crate::key::Key::*;
     match key {
-      Esc => {
-        buffer.preview_selections = None;
-        return Normal::switch_to();
-      }
+      Esc => return Normal::switch_to(),
       Backspace => {
         let len = self.command.len_chars();
         if len > 0 {
@@ -40,7 +46,7 @@ impl Mode for Filter {
       }
       Enter => {
         let command = self.command.to_string();
-        let selections = match self.reject {
+        let result = match self.reject {
           true => reject(
             &buffer.current.contents,
             &buffer.current.selections,
@@ -52,11 +58,10 @@ impl Mode for Filter {
             &command,
           ),
         };
-        if let Some(selections) = selections {
+        if let ModeResult::Ok(selections) = result {
           buffer.current.primary_selection = selections.len().saturating_sub(1);
           buffer.set_selections(selections);
         }
-        buffer.preview_selections = None;
         return Normal::switch_to();
       }
       Char(ch) => {
@@ -69,14 +74,29 @@ impl Mode for Filter {
     UpdateCommand::None
   }
 
-  fn status(&self) -> String {
-    format!("filter > {}", self.command)
+  fn status<'a>(&self) -> CowStr<'a> {
+    let match_indicator = match &self.preview {
+      ModeResult::Error => "[!]",
+      ModeResult::Empty => "[_]",
+      ModeResult::Ok(x) if x.is_empty() => "[_]",
+      ModeResult::Ok(_) => "[*]",
+    };
+    format!("filter {} > {}", match_indicator, self.command).into()
+  }
+
+  fn preview_selections(&self) -> Option<&Vec<Selection>> {
+    match &self.preview {
+      ModeResult::Error => None,
+      ModeResult::Empty => None,
+      ModeResult::Ok(x) if x.is_empty() => None,
+      ModeResult::Ok(x) => Some(x),
+    }
   }
 }
 
-fn update_preview(mode: &Filter, buffer: &mut Buffer) {
+fn update_preview(mode: &mut Filter, buffer: &Buffer) {
   let command = mode.command.to_string();
-  let selections = match mode.reject {
+  let result = match mode.reject {
     true => reject(
       &buffer.current.contents,
       &buffer.current.selections,
@@ -88,14 +108,16 @@ fn update_preview(mode: &Filter, buffer: &mut Buffer) {
       &command,
     ),
   };
-  buffer.preview_selections = selections;
+  mode.preview = result;
 }
 
-fn accept(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Vec<Selection>> {
+fn accept(contents: &Rope, selections: &[Selection], pattern: &str) -> ModeResult {
   if pattern.is_empty() {
-    return None;
+    return ModeResult::Empty;
   }
-  let regex = Regex::new(pattern)?;
+  let Some(regex) = Regex::new(pattern) else {
+    return ModeResult::Error;
+  };
   let mut new_selections = vec![];
   for selection in selections.iter() {
     let result = regex
@@ -105,14 +127,16 @@ fn accept(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Ve
       new_selections.push(*selection);
     }
   }
-  Some(new_selections)
+  ModeResult::Ok(new_selections)
 }
 
-fn reject(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Vec<Selection>> {
+fn reject(contents: &Rope, selections: &[Selection], pattern: &str) -> ModeResult {
   if pattern.is_empty() {
-    return None;
+    return ModeResult::Empty;
   }
-  let regex = Regex::new(pattern)?;
+  let Some(regex) = Regex::new(pattern) else {
+    return ModeResult::Error;
+  };
   let mut new_selections = vec![];
   for selection in selections.iter() {
     let result = regex
@@ -122,5 +146,5 @@ fn reject(contents: &Rope, selections: &[Selection], pattern: &str) -> Option<Ve
       new_selections.push(*selection);
     }
   }
-  Some(new_selections)
+  ModeResult::Ok(new_selections)
 }

@@ -1,0 +1,58 @@
+# Normal mode controls
+
+  # Meta actions
+
+    - `c-q` exit editor
+    - `c-w` write buffer to file
+
+  # Content editing
+
+    - `d` delete selection
+    - `a` insert before active anchor (insert mode)
+    - `z` undo
+    - `Z` redo
+
+  # Anchor movements
+
+    - `h` move active anchor left and collapse selection
+    - `j` move active anchor down and collapse selection
+    - `k` move active anchor up and collapse selection
+    - `l` move active anchor right and collapse selection
+    - `H` move active anchor left
+    - `J` move active anchor down
+    - `K` move active anchor up
+    - `L` move active anchor right
+    - `g` move active active anchor forward to match (seek mode)
+    - `G` move active active anchor backward to match (seek mode)
+    - `p` move active anchor down one page
+    - `P` move active anchor down one page
+    - `b` swap active and passive anchor
+    - `n` collapse selection to active anchor
+
+  # Selection manipulation
+
+    - `u` select entire buffer
+    - `y` make next selection primary
+    - `Y` make previous selection primary
+    - `t` drop all selections besides primary
+    - `T` drop primary selection
+    - `s` split selection into matches (split mode)
+    - `S` split selection around matches (split mode)
+    - `f` filter for selections (filter mode)
+    - `F` filter out selections (filter mode)
+
+  # View controls
+
+    - `v`     center view on primary selection
+    - `up`    move view up one line
+    - `down`  move view down one line
+    - `left`  move view left one line
+    - `right` move view right one line
+
+
+# todos
+
+- [DONE] rename search mode to seek mode
+- [DONE] visual feedback for zero-match command
+- [TODO] implement push/pop selections
+- [TODO] implement match group insert mode

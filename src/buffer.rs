@@ -16,7 +16,6 @@ pub struct Buffer {
   pub history: Vec<Snapshot>,
   pub history_index: usize,
   pub filename: Option<String>,
-  pub preview_selections: Option<Vec<Selection>>,
 }
 
 impl Buffer {
@@ -32,7 +31,6 @@ impl Buffer {
       history,
       history_index: 0,
       filename: None,
-      preview_selections: None,
     }
   }
 
@@ -57,7 +55,6 @@ impl Buffer {
       history,
       history_index: 0,
       filename: Some(filename),
-      preview_selections: None,
     })
   }
 

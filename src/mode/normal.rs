@@ -23,7 +23,7 @@ impl Mode for Normal {
       Char('q') if modifiers.control => return UpdateCommand::Quit,
       Char('w') if modifiers.control => buffer.save(),
 
-      // Selection
+      // anchors
       Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
       Char('j') => buffer.apply_operations(&[Op::MoveByLine(1), Op::Collapse]),
       Char('k') => buffer.apply_operations(&[Op::MoveByLine(-1), Op::Collapse]),
@@ -70,8 +70,8 @@ impl Mode for Normal {
       }
       Char('s') => return Split::switch_to(false),
       Char('S') => return Split::switch_to(true),
-      Char('g') => return Search::switch_to(false),
-      Char('G') => return Search::switch_to(true),
+      Char('g') => return Seek::switch_to(false),
+      Char('G') => return Seek::switch_to(true),
       Char('f') => return Filter::switch_to(false),
       Char('F') => return Filter::switch_to(true),
 
@@ -117,8 +117,12 @@ impl Mode for Normal {
     UpdateCommand::None
   }
 
-  fn status(&self) -> String {
-    "normal".to_string()
+  fn status<'a>(&self) -> CowStr<'a> {
+    "normal".into()
+  }
+
+  fn preview_selections(&self) -> Option<&Vec<Selection>> {
+    None
   }
 }
 
