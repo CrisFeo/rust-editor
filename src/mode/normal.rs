@@ -77,34 +77,16 @@ impl Mode for Normal {
 
       // Modification
       Char('d') => {
+        buffer.push_history();
         buffer.apply_operations(&[Op::RemoveAll]);
-        buffer.push_snapshot();
       }
       Char('a') => {
+        buffer.push_history();
         buffer.apply_operations(&[Op::Collapse]);
         return mode::Insert::switch_to();
       }
-      Char('z') => {
-        if buffer.history_index > 0 {
-          buffer.history_index -= 1;
-          let next = buffer
-            .history
-            .get(buffer.history_index)
-            .expect("history should always have at least one entry when undoing");
-          buffer.current = next.clone();
-        }
-      }
-      Char('Z') => {
-        if buffer.history_index < buffer.history.len() - 1 {
-          buffer.history_index += 1;
-          let next = buffer
-            .history
-            .get(buffer.history_index)
-            .expect("history should always have at least one entry when redoing");
-          buffer.current = next.clone();
-        }
-      }
-
+      Char('z') => buffer.undo(),
+      Char('Z') => buffer.redo(),
       // View
       Char('v') => center(buffer, window),
       Up => window.scroll_top = window.scroll_top.saturating_sub(1),

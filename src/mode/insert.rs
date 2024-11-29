@@ -19,10 +19,7 @@ impl Mode for Insert {
   ) -> UpdateCommand {
     use crate::key::Key::*;
     match key {
-      Esc => {
-        buffer.push_snapshot();
-        return Normal::switch_to();
-      }
+      Esc => return Normal::switch_to(),
       Backspace => buffer.apply_operations(&[Op::Remove]),
       Tab => buffer.apply_operations(&[Op::Insert(' '), Op::Insert(' ')]),
       Enter => buffer.apply_operations(&[Op::Insert('\n')]),

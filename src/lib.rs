@@ -1,4 +1,5 @@
 mod buffer;
+mod history;
 mod key;
 mod mode;
 mod regex;
@@ -8,6 +9,7 @@ mod view;
 mod window;
 
 pub use buffer::*;
+pub use history::*;
 pub use key::*;
 pub use mode::*;
 pub use regex::*;

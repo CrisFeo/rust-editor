@@ -2,6 +2,7 @@ use crate::*;
 use crossterm::event::{read, Event, KeyCode, KeyModifiers};
 use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::{cursor, execute, queue, terminal};
+use crossterm::terminal::{ClearType};
 use gag::Hold;
 use std::io::{self, BufWriter, Stdout, Write};
 
@@ -25,6 +26,7 @@ impl Screen {
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
     execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
     terminal::enable_raw_mode().expect("should enable raw mode");
+    queue!(output, terminal::Clear(ClearType::All)).expect("should clear screen");
     queue!(output, cursor::Hide).expect("should hide cursor");
     queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor when setting up");
     queue!(output, SetBackgroundColor(Color::Black)).expect("should set background color when setting up");

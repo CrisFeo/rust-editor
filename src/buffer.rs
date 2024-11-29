@@ -3,7 +3,7 @@ use ropey::Rope;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, ErrorKind, Result};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct Snapshot {
   pub contents: Rope,
   pub selections: Vec<Selection>,
@@ -13,9 +13,8 @@ pub struct Snapshot {
 #[derive(Clone)]
 pub struct Buffer {
   pub current: Snapshot,
-  pub history: Vec<Snapshot>,
-  pub history_index: usize,
   pub filename: Option<String>,
+  history: History,
 }
 
 impl Buffer {
@@ -25,11 +24,9 @@ impl Buffer {
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
     };
-    let history = vec![current.clone()];
     Self {
       current,
-      history,
-      history_index: 0,
+      history: Default::default(),
       filename: None,
     }
   }
@@ -49,11 +46,9 @@ impl Buffer {
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
     };
-    let history = vec![current.clone()];
     Ok(Self {
       current,
-      history,
-      history_index: 0,
+      history: Default::default(),
       filename: Some(filename),
     })
   }
@@ -91,6 +86,22 @@ impl Buffer {
     self.adjust_selections();
   }
 
+  pub fn undo(&mut self) {
+    if let Some(snapshot) = self.history.back(&self.current) {
+      self.current = snapshot;
+    };
+  }
+
+  pub fn redo(&mut self) {
+    if let Some(snapshot) = self.history.forward() {
+      self.current = snapshot;
+    };
+  }
+
+  pub fn push_history(&mut self) {
+    self.history.push(self.current.clone());
+  }
+
   pub fn apply_operations(&mut self, ops: &[Op]) {
     for op in ops.iter() {
       for i in 0..self.current.selections.len() {
@@ -111,12 +122,6 @@ impl Buffer {
       }
     }
     self.adjust_selections();
-  }
-
-  pub fn push_snapshot(&mut self) {
-    self.history.truncate(self.history_index + 1);
-    self.history.push(self.current.clone());
-    self.history_index += 1;
   }
 
   fn adjust_selections(&mut self) {

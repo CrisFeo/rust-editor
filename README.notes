@@ -49,10 +49,11 @@
     - `left`  move view left one line
     - `right` move view right one line
 
-
-# todos
+# Todos
 
 - [DONE] rename search mode to seek mode
 - [DONE] visual feedback for zero-match command
-- [TODO] implement push/pop selections
-- [TODO] implement match group insert mode
+- [DONE] implement push/pop selections
+- [SKIP] implement match group insert mode
+- [DONE] fix undo buffer
+- [TODO] add toast for file save
