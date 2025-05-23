@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 set -Eeuo pipefail
 
-CONTAINER_NAME="$(basename "$PWD")-devenv"
+PROJECT_NAME="$(basename "$PWD")"
+CONTAINER_NAME="$PROJECT_NAME-devenv"
 ADDITIONAL_DOCKER_ARGS=""
 
 if [ "${1-}" = '--rebuild' ]; then
@@ -27,23 +28,24 @@ else
   echo "$CONTAINER_NAME not found, creating container..."
   docker build .               \
     --build-arg USER="$USER"   \
-    --build-arg UID="$(id -u)" \
-    --build-arg GID="$(id -g)" \
+    --build-arg USER_UID="$(id -u)" \
+    --build-arg USER_GID="$(id -g)" \
+    --build-arg DOCKER_GID="$(stat -c %g /var/run/docker.sock)" \
     --tag "$CONTAINER_NAME:latest"
   LOCAL_WORKSPACE_FOLDER="${LOCAL_WORKSPACE_FOLDER:-$(pwd)}"
   PS1="\[\e[32m\]$CONTAINER_NAME\[\e[m\] \w\n\[\e[;33m\]>\[\e[m\] "
-  docker run                                                             \
-    --name $CONTAINER_NAME                                               \
-    --interactive                                                        \
-    --tty                                                                \
-    --volume '//var/run/docker.sock://var/run/docker.sock'               \
-    --volume "$SSH_AUTH_SOCK:/ssh-agent"                                 \
-    --env "SSH_AUTH_SOCK=/ssh-agent"                                     \
-    --env "LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER"               \
-    --env "PS1=$PS1"                                                     \
-    --mount "type=bind,source=$LOCAL_WORKSPACE_FOLDER,target=/workspace" \
-    --workdir "/workspace"                                               \
-    $ADDITIONAL_DOCKER_ARGS                                              \
-    "$CONTAINER_NAME:latest"                                             \
+  docker run                                                                 \
+    --name $CONTAINER_NAME                                                   \
+    --interactive                                                            \
+    --tty                                                                    \
+    --volume '//var/run/docker.sock://var/run/docker.sock'                   \
+    --volume "$SSH_AUTH_SOCK:/ssh-agent"                                     \
+    --env "SSH_AUTH_SOCK=/ssh-agent"                                         \
+    --env "LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER"                   \
+    --env "PS1=$PS1"                                                         \
+    --mount "type=bind,source=$LOCAL_WORKSPACE_FOLDER,target=/$PROJECT_NAME" \
+    --workdir "/$PROJECT_NAME"                                               \
+    $ADDITIONAL_DOCKER_ARGS                                                  \
+    "$CONTAINER_NAME:latest"                                                 \
     /bin/bash
 fi

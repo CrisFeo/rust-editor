@@ -34,8 +34,8 @@ impl Mode for Normal {
       Char('L') => buffer.apply_operations(&[Op::MoveByChar(1)]),
       Char('b') => buffer.apply_operations(&[Op::Swap]),
       Char('n') => buffer.apply_operations(&[Op::Collapse]),
-      Char('p') => page(buffer, window, 1),
-      Char('P') => page(buffer, window, -1),
+      Char('p') => move_by_window_page(buffer, window, 1),
+      Char('P') => move_by_window_page(buffer, window, -1),
 
       // Selections
       Char('u') => buffer.set_selections(vec![Selection::new_at_end(
@@ -108,7 +108,7 @@ impl Mode for Normal {
   }
 }
 
-fn page(buffer: &mut Buffer, window: &mut Window, delta: isize) {
+fn move_by_window_page(buffer: &mut Buffer, window: &mut Window, delta: isize) {
   buffer.apply_operations(
     &[
       vec![Op::MoveByLine(delta); window.height / 2],

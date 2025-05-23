@@ -1,10 +1,16 @@
 use crate::*;
 use crossterm::event::{read, Event, KeyCode, KeyModifiers};
-use crossterm::style::{Color, Print, SetBackgroundColor, SetForegroundColor};
+use crossterm::style::{Print, SetBackgroundColor, SetForegroundColor};
+use crossterm::terminal::ClearType;
 use crossterm::{cursor, execute, queue, terminal};
-use crossterm::terminal::{ClearType};
 use gag::Hold;
 use std::io::{self, BufWriter, Stdout, Write};
+
+impl From<Color> for crossterm::style::Color {
+  fn from(c: Color) -> Self {
+    (c.0, c.1, c.2).into()
+  }
+}
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 struct Cell(char, Color, Color);
@@ -16,12 +22,14 @@ pub struct Screen {
   width: usize,
   height: usize,
   current_cursor: (usize, usize),
+  default_bg: Color,
+  default_fg: Color,
   current_bg: Color,
   current_fg: Color,
 }
 
 impl Screen {
-  pub fn create() -> Self {
+  pub fn create(bg: Color, fg: Color) -> Self {
     let held_stderr = gag::Hold::stderr().expect("should gag stderr");
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
     execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
@@ -29,16 +37,20 @@ impl Screen {
     queue!(output, terminal::Clear(ClearType::All)).expect("should clear screen");
     queue!(output, cursor::Hide).expect("should hide cursor");
     queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor when setting up");
-    queue!(output, SetBackgroundColor(Color::Black)).expect("should set background color when setting up");
-    queue!(output, SetForegroundColor(Color::White)).expect("should set foreground color when setting up");
-    output.flush().expect("should flush queued output when setting up");
+    queue!(output, SetBackgroundColor(bg.into()))
+      .expect("should set background color when setting up");
+    queue!(output, SetForegroundColor(fg.into()))
+      .expect("should set foreground color when setting up");
+    output
+      .flush()
+      .expect("should flush queued output when setting up");
     let (width, height) = {
       let (width, height) = terminal::size().expect("should retrieve terminal size");
       (width as usize, height as usize)
     };
     let mut buffer = Vec::with_capacity(width * height);
     for _ in 0..(width * height) {
-      buffer.push(Some(Cell(' ', Color::Black, Color::White)));
+      buffer.push(Some(Cell(' ', bg, fg)));
     }
     Self {
       _held_stderr: held_stderr,
@@ -47,8 +59,10 @@ impl Screen {
       width,
       height,
       current_cursor: (0, 0),
-      current_bg: Color::Black,
-      current_fg: Color::White,
+      default_bg: bg,
+      default_fg: fg,
+      current_bg: bg,
+      current_fg: fg,
     }
   }
 
@@ -91,7 +105,7 @@ impl Screen {
           self.width = width as usize;
           self.height = height as usize;
           self.buffer.resize(self.width * self.height, None);
-          let blank = Cell(' ', Color::Black, Color::White);
+          let blank = Cell(' ', self.default_bg, self.default_fg);
           for i in 0..self.buffer.len() {
             self.buffer[i] = Some(blank);
           }
@@ -102,7 +116,7 @@ impl Screen {
   }
 
   pub fn clear(&mut self) {
-    let blank = Cell(' ', Color::Black, Color::White);
+    let blank = Cell(' ', self.default_bg, self.default_fg);
     for cell in &mut self.buffer {
       if let Some(c) = cell {
         if *c == blank {
@@ -135,14 +149,14 @@ impl Screen {
 
   fn set_bg(&mut self, color: Color) {
     if color != self.current_bg {
-      queue!(self.output, SetBackgroundColor(color)).expect("should set background color");
+      queue!(self.output, SetBackgroundColor(color.into())).expect("should set background color");
       self.current_bg = color;
     }
   }
 
   fn set_fg(&mut self, color: Color) {
     if color != self.current_fg {
-      queue!(self.output, SetForegroundColor(color)).expect("should set foreground color");
+      queue!(self.output, SetForegroundColor(color.into())).expect("should set foreground color");
       self.current_fg = color;
     }
   }
@@ -158,7 +172,10 @@ impl Screen {
         }
       }
     }
-    self.output.flush().expect("should flush queued output when presenting");
+    self
+      .output
+      .flush()
+      .expect("should flush queued output when presenting");
   }
 }
 

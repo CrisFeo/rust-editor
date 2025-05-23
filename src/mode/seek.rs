@@ -126,14 +126,12 @@ fn forward(contents: &Rope, selections: &[Selection], pattern: &str) -> ModeResu
     // begin the search from the character after the active anchor to allow
     // seeking to the next instance of the character under the cursor
     let start = selection.cursor().saturating_add(1).min(contents_end);
-    let result = regex
-      .find(contents, start, contents_end)
-      .next();
+    let result = regex.find(contents, start, contents_end).next();
     let new_selection = match result {
       Some((start, end)) => {
         changed = true;
         move_cursor(*selection, start, end)
-      },
+      }
       None => *selection,
     };
     new_selections.push(new_selection);
@@ -158,14 +156,12 @@ fn reverse(contents: &Rope, selections: &[Selection], pattern: &str) -> ModeResu
     // end the search a character before the active anchor to allow seeking to
     // the previous instance of the character under the cursor
     let end = selection.cursor().saturating_sub(1).max(0);
-    let result = regex
-      .find(contents, 0, end)
-      .last();
+    let result = regex.find(contents, 0, end).last();
     let new_selection = match result {
       Some((start, end)) => {
         changed = true;
         move_cursor(*selection, start, end)
-      },
+      }
       None => *selection,
     };
     new_selections.push(new_selection);

@@ -18,14 +18,19 @@ pub struct History {
 
 impl Default for History {
   fn default() -> Self {
-    Self { state: Some(State::Empty) }
+    Self {
+      state: Some(State::Empty),
+    }
   }
 }
 
 impl History {
   pub fn back(&mut self, current: &Snapshot) -> Option<Snapshot> {
     let mut result = None;
-    let state = self.state.take().expect("history state cannot be updated recursively");
+    let state = self
+      .state
+      .take()
+      .expect("history state cannot be updated recursively");
     self.state = Some(match state {
       State::Empty => State::Empty,
       State::Tracking(snapshots) => {
@@ -37,8 +42,12 @@ impl History {
           current,
           index,
         }
-      },
-      State::Viewing { snapshots, current, index } => {
+      }
+      State::Viewing {
+        snapshots,
+        current,
+        index,
+      } => {
         let index = index.saturating_sub(1);
         result = Some(snapshots[index].clone());
         State::Viewing {
@@ -46,18 +55,25 @@ impl History {
           current,
           index,
         }
-      },
+      }
     });
     result
   }
 
   pub fn forward(&mut self) -> Option<Snapshot> {
     let mut result = None;
-    let state = self.state.take().expect("history state cannot be updated recursively");
+    let state = self
+      .state
+      .take()
+      .expect("history state cannot be updated recursively");
     self.state = Some(match state {
       State::Empty => State::Empty,
       State::Tracking(snapshots) => State::Tracking(snapshots),
-      State::Viewing { snapshots, current, index } => {
+      State::Viewing {
+        snapshots,
+        current,
+        index,
+      } => {
         let index = index + 1;
         if index == snapshots.len() {
           result = Some(current);
@@ -71,22 +87,27 @@ impl History {
             index,
           }
         }
-      },
+      }
     });
     result
   }
 
   pub fn push(&mut self, current: Snapshot) {
-    let state = self.state.take().expect("history state cannot be updated recursively");
+    let state = self
+      .state
+      .take()
+      .expect("history state cannot be updated recursively");
     self.state = Some(match state {
-      State::Empty => {
-        State::Tracking(vec![current])
-      },
+      State::Empty => State::Tracking(vec![current]),
       State::Tracking(mut snapshots) => {
         snapshots.push(current);
         State::Tracking(snapshots)
-      },
-      State::Viewing { mut snapshots, current, index } => {
+      }
+      State::Viewing {
+        mut snapshots,
+        current,
+        index,
+      } => {
         snapshots.truncate(index + 1);
         snapshots.push(current.clone());
         State::Viewing {
@@ -94,7 +115,7 @@ impl History {
           current,
           index,
         }
-      },
+      }
     });
   }
 }
@@ -149,7 +170,7 @@ impl History {
   }
 
   pub fn push(&mut self, current: Snapshot) {
-		if let Some((index, _)) = self.pointer {
+    if let Some((index, _)) = self.pointer {
       self.snapshots.truncate(index + 1);
       self.pointer = None;
     }

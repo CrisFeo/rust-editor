@@ -1,5 +1,4 @@
 use crate::*;
-use crossterm::style::Color;
 
 pub struct View {
   screen: Screen,
@@ -12,14 +11,18 @@ pub struct View {
 }
 
 impl View {
-  #[rustfmt::skip]
   pub fn create() -> Self {
+    #[rustfmt::skip]
+    let accent_color = Color(95,  135, 0  );
+    let ramp_0_color = Color(0, 0, 0);
+    let ramp_1_color = Color(78, 78, 78);
+    let ramp_2_color = Color(188, 188, 188);
     Self {
-      screen: Screen::create(),
-      accent_color: Color::Rgb{ r: 95,  g: 135, b: 0   },
-      ramp_0_color: Color::Rgb{ r: 0,   g: 0,   b: 0   },
-      ramp_1_color: Color::Rgb{ r: 78,  g: 78,  b: 78  },
-      ramp_2_color: Color::Rgb{ r: 188, g: 188, b: 188 },
+      screen: Screen::create(ramp_0_color, ramp_2_color),
+      accent_color,
+      ramp_0_color,
+      ramp_1_color,
+      ramp_2_color,
       new_line_char: '¬',
       end_of_file_char: 'Ω',
     }

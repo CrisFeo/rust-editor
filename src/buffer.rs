@@ -105,11 +105,9 @@ impl Buffer {
   pub fn apply_operations(&mut self, ops: &[Op]) {
     for op in ops.iter() {
       for i in 0..self.current.selections.len() {
-        let selection = self
-          .current
-          .selections
-          .get_mut(i)
-          .expect("should be able to retrieve selection at index less than length when applying operation");
+        let selection = self.current.selections.get_mut(i).expect(
+          "should be able to retrieve selection at index less than length when applying operation",
+        );
         let change = selection.apply(&mut self.current.contents, *op);
         for j in i + 1..self.current.selections.len() {
           let next_selection = self

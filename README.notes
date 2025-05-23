@@ -25,7 +25,7 @@
     - `g` move active active anchor forward to match (seek mode)
     - `G` move active active anchor backward to match (seek mode)
     - `p` move active anchor down one page
-    - `P` move active anchor down one page
+    - `P` move active anchor up one page
     - `b` swap active and passive anchor
     - `n` collapse selection to active anchor
 
@@ -57,3 +57,4 @@
 - [SKIP] implement match group insert mode
 - [DONE] fix undo buffer
 - [TODO] add toast for file save
+- [TODO] move view to include preview anchor
