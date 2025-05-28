@@ -3,12 +3,13 @@ use std::cmp::Ordering;
 use std::mem::swap;
 
 #[derive(Debug, Copy, Clone)]
-pub enum Op {
+pub enum Op<'a> {
   Swap,
   Collapse,
   MoveByChar(isize),
   MoveByLine(isize),
-  Insert(char),
+  InsertChar(char),
+  InsertStr(&'a str),
   Remove,
   RemoveAll,
 }
@@ -92,7 +93,8 @@ impl Selection {
       Op::Collapse => self.collapse(),
       Op::MoveByChar(delta) => self.move_by_char(contents, delta),
       Op::MoveByLine(delta) => self.move_by_line(contents, delta),
-      Op::Insert(ch) => self.insert(contents, ch),
+      Op::InsertChar(value) => self.insert_char(contents, value),
+      Op::InsertStr(value) => self.insert_str(contents, value),
       Op::Remove => self.remove(contents),
       Op::RemoveAll => self.remove_all(contents),
     };
@@ -205,10 +207,18 @@ impl Selection {
     Change::None
   }
 
-  fn insert(&mut self, contents: &mut Rope, ch: char) -> Change {
+  fn insert_char(&mut self, contents: &mut Rope, value: char) -> Change {
     let cursor = self.cursor();
     let change = Change::Addition(cursor, 1);
-    contents.insert_char(cursor, ch);
+    contents.insert_char(cursor, value);
+    self.last_line_offset = None;
+    change
+  }
+
+  fn insert_str(&mut self, contents: &mut Rope, value: &str) -> Change {
+    let cursor = self.cursor();
+    let change = Change::Addition(cursor, value.len());
+    contents.insert(cursor, value);
     self.last_line_offset = None;
     change
   }

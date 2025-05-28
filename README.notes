@@ -9,6 +9,8 @@
 
     - `d` delete selection
     - `a` insert before active anchor (insert mode)
+    - `q` copy selection contents to clipboard
+    - `Q` paste selection contents from clipboard
     - `z` undo
     - `Z` redo
 
@@ -34,8 +36,8 @@
     - `u` select entire buffer
     - `y` make next selection primary
     - `Y` make previous selection primary
-    - `t` drop all selections besides primary
-    - `T` drop primary selection
+    - `t` drop primary selection
+    - `T` drop all selections besides primary
     - `s` split selection into matches (split mode)
     - `S` split selection around matches (split mode)
     - `f` filter for selections (filter mode)
@@ -49,12 +51,15 @@
     - `left`  move view left one line
     - `right` move view right one line
 
-# Todos
+# Tasks
 
 - [DONE] rename search mode to seek mode
 - [DONE] visual feedback for zero-match command
 - [DONE] implement push/pop selections
 - [SKIP] implement match group insert mode
 - [DONE] fix undo buffer
-- [TODO] add toast for file save
-- [TODO] move view to include preview anchor
+- [DONE] add toast for file save
+- [DONE] move view to include preview anchor
+- [DONE] implement basic copy/paste
+- [TODO] implement basic macros
+- [TODO] implement multiple buffers

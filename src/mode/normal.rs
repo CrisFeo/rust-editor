@@ -1,11 +1,13 @@
 use crate::*;
 
-pub struct Normal;
+#[derive(Default)]
+pub struct Normal {
+  toast: Option<String>
+}
 
 impl Normal {
   pub fn switch_to() -> UpdateCommand {
-    let mode = Normal;
-    UpdateCommand::Switch(Box::new(mode))
+    UpdateCommand::Switch(Box::new(Self::default()))
   }
 }
 
@@ -13,17 +15,25 @@ impl Mode for Normal {
   fn update(
     &mut self,
     buffer: &mut Buffer,
+    registry: &mut Registry,
     window: &mut Window,
     modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;
+    self.toast = None;
     match key {
       // Meta
       Char('q') if modifiers.control => return UpdateCommand::Quit,
-      Char('w') if modifiers.control => buffer.save(),
+      Char('w') if modifiers.control => {
+        self.toast = if buffer.save() {
+          Some("file saved!".into())
+        } else {
+          Some("error: could not save file".into())
+        };
+      },
 
-      // anchors
+      // Anchors
       Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
       Char('j') => buffer.apply_operations(&[Op::MoveByLine(1), Op::Collapse]),
       Char('k') => buffer.apply_operations(&[Op::MoveByLine(-1), Op::Collapse]),
@@ -56,8 +66,7 @@ impl Mode for Normal {
           -1,
         )
       }
-      Char('t') => buffer.set_selections(vec![*buffer.primary_selection()]),
-      Char('T') => {
+      Char('t') => {
         let selections = buffer
           .current
           .selections
@@ -68,6 +77,7 @@ impl Mode for Normal {
           .collect();
         buffer.set_selections(selections);
       }
+      Char('T') => buffer.set_selections(vec![*buffer.primary_selection()]),
       Char('s') => return Split::switch_to(false),
       Char('S') => return Split::switch_to(true),
       Char('g') => return Seek::switch_to(false),
@@ -85,8 +95,16 @@ impl Mode for Normal {
         buffer.apply_operations(&[Op::Collapse]);
         return mode::Insert::switch_to();
       }
+      Char('q') => registry.set("clipboard", Register::Content(buffer.copy())),
+      Char('Q') => {
+        if let Some(Register::Content(contents)) = registry.get("clipboard")  {
+          buffer.push_history();
+          buffer.paste(contents);
+        }
+      }
       Char('z') => buffer.undo(),
       Char('Z') => buffer.redo(),
+
       // View
       Char('v') => center(buffer, window),
       Up => window.scroll_top = window.scroll_top.saturating_sub(1),
@@ -99,8 +117,11 @@ impl Mode for Normal {
     UpdateCommand::None
   }
 
-  fn status<'a>(&self) -> CowStr<'a> {
-    "normal".into()
+  fn status<'a>(&'a self) -> CowStr<'a> {
+    match &self.toast {
+      Some(toast) => toast.into(),
+      None => "normal".into(),
+    }
   }
 
   fn preview_selections(&self) -> Option<&Vec<Selection>> {

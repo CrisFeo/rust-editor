@@ -22,12 +22,13 @@ pub trait Mode {
   fn update(
     &mut self,
     buffer: &mut Buffer,
+    registry: &mut Registry,
     window: &mut Window,
     modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand;
 
-  fn status<'a>(&self) -> CowStr<'a>;
+  fn status<'a>(&'a self) -> CowStr<'a>;
 
   fn preview_selections(&self) -> Option<&Vec<Selection>>;
 }

@@ -13,23 +13,25 @@ impl Mode for Insert {
   fn update(
     &mut self,
     buffer: &mut Buffer,
+    _registry: &mut Registry,
     _window: &mut Window,
-    _modifiers: Modifiers,
+    modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;
     match key {
+      Char('q') if modifiers.control => return Normal::switch_to(),
       Esc => return Normal::switch_to(),
       Backspace => buffer.apply_operations(&[Op::Remove]),
-      Tab => buffer.apply_operations(&[Op::Insert(' '), Op::Insert(' ')]),
-      Enter => buffer.apply_operations(&[Op::Insert('\n')]),
-      Char(ch) => buffer.apply_operations(&[Op::Insert(ch)]),
+      Tab => buffer.apply_operations(&[Op::InsertChar(' '), Op::InsertChar(' ')]),
+      Enter => buffer.apply_operations(&[Op::InsertChar('\n')]),
+      Char(ch) => buffer.apply_operations(&[Op::InsertChar(ch)]),
       _ => {}
     }
     UpdateCommand::None
   }
 
-  fn status<'a>(&self) -> CowStr<'a> {
+  fn status<'a>(&'a self) -> CowStr<'a> {
     "insert".into()
   }
 

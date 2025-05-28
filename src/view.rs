@@ -14,8 +14,8 @@ impl View {
   pub fn create() -> Self {
     #[rustfmt::skip]
     let accent_color = Color(95,  135, 0  );
-    let ramp_0_color = Color(0, 0, 0);
-    let ramp_1_color = Color(78, 78, 78);
+    let ramp_0_color = Color(0,   0,   0  );
+    let ramp_1_color = Color(78,  78,  78 );
     let ramp_2_color = Color(188, 188, 188);
     Self {
       screen: Screen::create(ramp_0_color, ramp_2_color),
@@ -125,9 +125,18 @@ impl View {
       };
       format!("{}{}", cursor_location, buffer_name)
     };
-    let status_gap_size = width - (status_left.len() + status_right.len());
-    let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
-    let status = format!("{}{}{}", status_left, status_gap, status_right);
+    let status_min_size = status_left.len() + status_right.len();
+    let status = if status_min_size < width {
+      let status_gap_size = width - status_min_size;
+      let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
+      format!("{}{}{}", status_left, status_gap, status_right)
+    } else if status_left.len() < width {
+      let status_gap_size = width - status_left.len();
+      let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
+      format!("{}{}", status_left, status_gap)
+    } else {
+      (0..width).map(|_| " ").collect::<String>()
+    };
     for (i, ch) in status.chars().enumerate() {
       self.screen.draw(
         height.saturating_sub(1),

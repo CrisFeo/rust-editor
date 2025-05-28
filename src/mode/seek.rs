@@ -31,12 +31,14 @@ impl Mode for Seek {
   fn update(
     &mut self,
     buffer: &mut Buffer,
+    _registry: &mut Registry,
     _window: &mut Window,
-    _modifiers: Modifiers,
+    modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;
     match key {
+      Char('q') if modifiers.control => return Normal::switch_to(),
       Esc => return Normal::switch_to(),
       Backspace => {
         let len = self.command.len_chars();
@@ -75,7 +77,7 @@ impl Mode for Seek {
     UpdateCommand::None
   }
 
-  fn status<'a>(&self) -> CowStr<'a> {
+  fn status<'a>(&'a self) -> CowStr<'a> {
     let match_indicator = match &self.preview {
       ModeResult::Error => "[!]",
       ModeResult::Empty => "[_]",

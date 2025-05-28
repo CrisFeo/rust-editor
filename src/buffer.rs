@@ -53,21 +53,25 @@ impl Buffer {
     })
   }
 
-  pub fn save(&self) {
+  pub fn save(&self) -> bool {
     if let Some(filename) = &self.filename {
       let file = match File::create(filename) {
         Ok(file) => file,
         Err(e) => {
           eprintln!("{}", e);
-          return;
+          return false;
         }
       };
       let writer = BufWriter::new(file);
       match self.current.contents.write_to(writer) {
         Ok(_) => {}
-        Err(e) => eprintln!("{}", e),
+        Err(e) => {
+          eprintln!("{}", e);
+          return false;
+        },
       };
     }
+    true
   }
 
   pub fn primary_selection(&self) -> &Selection {
@@ -117,6 +121,42 @@ impl Buffer {
             .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
           next_selection.adjust(&self.current.contents, change);
         }
+      }
+    }
+    self.adjust_selections();
+  }
+
+  pub fn copy(&mut self) -> Vec<String> {
+    let mut contents = Vec::with_capacity(self.current.selections.len());
+    for i in 0..self.current.selections.len() {
+      let i = (self.current.primary_selection + i) % self.current.selections.len();
+      let selection = self.current.selections.get(i).expect(
+        "should be able to retrieve selection at index less than length when copying",
+      );
+      let range = selection.start()..=selection.end();
+      let content = self.current.contents.slice(range);
+      contents.push(content.into());
+    }
+    contents
+  }
+
+  pub fn paste(&mut self, contents: &[String]) {
+    for content_i in 0..self.current.selections.len().min(contents.len()) {
+      let selection_i = (self.current.primary_selection + content_i) % self.current.selections.len();
+      let selection = self.current.selections.get_mut(selection_i).expect(
+        "should be able to retrieve selection at index less than length when pasting",
+      );
+      let content = contents.get(content_i).expect(
+        "should be able to retrieve content at index less than length when pasting",
+      );
+      let change = selection.apply(&mut self.current.contents, Op::InsertStr(content));
+      for j in selection_i + 1..self.current.selections.len() {
+        let next_selection = self
+          .current
+          .selections
+          .get_mut(j)
+          .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
+        next_selection.adjust(&self.current.contents, change);
       }
     }
     self.adjust_selections();

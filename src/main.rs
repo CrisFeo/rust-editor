@@ -16,13 +16,14 @@ fn main() {
         exit(1);
       }
     };
-    let mut mode: Box<dyn Mode> = Box::new(Normal);
+    let mut registry = Registry::default();
+    let mut mode: Box<dyn Mode> = Box::new(Normal::default());
     let mut view = View::create();
     let mut window = Window::default();
     loop {
       view.render(mode.as_ref(), &buffer, &window);
       let (modifiers, key) = view.poll();
-      let result = mode.update(&mut buffer, &mut window, modifiers, key);
+      let result = mode.update(&mut buffer, &mut registry, &mut window, modifiers, key);
       match result {
         UpdateCommand::Switch(next_mode) => mode = next_mode,
         UpdateCommand::None => {}
