@@ -133,7 +133,8 @@ impl Buffer {
       let selection = self.current.selections.get(i).expect(
         "should be able to retrieve selection at index less than length when copying",
       );
-      let range = selection.start()..=selection.end();
+      let end = selection.end().min(self.current.contents.len_chars()-1);
+      let range = selection.start()..=end;
       let content = self.current.contents.slice(range);
       contents.push(content.into());
     }
