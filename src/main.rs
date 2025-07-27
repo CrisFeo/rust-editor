@@ -18,7 +18,18 @@ fn main() {
     };
     let mut registry = Registry::default();
     let mut mode: Box<dyn Mode> = Box::new(Normal::default());
-    let mut view = View::create();
+    let mut view = View::create(
+      // normal terminal
+      //Color(95,  135, 0  ), // accent
+      //Color(0,   0,   0  ), // ramp 0
+      //Color(78,  78,  78 ), // ramp 1
+      //Color(188, 188, 188), // ramp 2
+      // e-ink terminal
+      Color(120,  120,  120),
+      Color(255, 255, 255),
+      Color(188, 188, 188),
+      Color(0,   0,   0  ),
+    );
     let mut window = Window::default();
     loop {
       view.render(mode.as_ref(), &buffer, &window);

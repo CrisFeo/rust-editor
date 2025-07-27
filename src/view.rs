@@ -11,12 +11,12 @@ pub struct View {
 }
 
 impl View {
-  pub fn create() -> Self {
-    #[rustfmt::skip]
-    let accent_color = Color(95,  135, 0  );
-    let ramp_0_color = Color(0,   0,   0  );
-    let ramp_1_color = Color(78,  78,  78 );
-    let ramp_2_color = Color(188, 188, 188);
+  pub fn create(
+    accent_color: Color,
+    ramp_0_color: Color,
+    ramp_1_color: Color,
+    ramp_2_color: Color,
+  ) -> Self {
     Self {
       screen: Screen::create(ramp_0_color, ramp_2_color),
       accent_color,
