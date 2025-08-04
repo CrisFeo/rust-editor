@@ -47,6 +47,11 @@ impl Mode for Seek {
           update_preview(self, buffer);
         }
       }
+      Char(ch) => {
+        let len = self.command.len_chars();
+        self.command.insert_char(len, ch);
+        update_preview(self, buffer);
+      }
       Enter => {
         let command = self.command.to_string();
         let result = match self.reverse {
@@ -67,17 +72,12 @@ impl Mode for Seek {
         }
         return Normal::switch_to();
       }
-      Char(ch) => {
-        let len = self.command.len_chars();
-        self.command.insert_char(len, ch);
-        update_preview(self, buffer);
-      }
       _ => {}
     }
     UpdateCommand::None
   }
 
-  fn status<'a>(&'a self) -> CowStr<'a> {
+  fn status(&self) -> CowStr {
     let match_indicator = match &self.preview {
       ModeResult::Error => "[!]",
       ModeResult::Empty => "[_]",

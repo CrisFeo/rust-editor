@@ -2,7 +2,7 @@ use crate::*;
 
 #[derive(Default)]
 pub struct Normal {
-  toast: Option<String>
+  toast: Option<String>,
 }
 
 impl Normal {
@@ -31,7 +31,7 @@ impl Mode for Normal {
         } else {
           Some("error: could not save file".into())
         };
-      },
+      }
 
       // Anchors
       Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
@@ -97,13 +97,14 @@ impl Mode for Normal {
       }
       Char('q') => registry.set("clipboard", Register::Content(buffer.copy())),
       Char('Q') => {
-        if let Some(Register::Content(contents)) = registry.get("clipboard")  {
+        if let Some(Register::Content(contents)) = registry.get("clipboard") {
           buffer.push_history();
           buffer.paste(contents);
         }
       }
       Char('z') => buffer.undo(),
       Char('Z') => buffer.redo(),
+      Char('r') => return Pipe::switch_to(),
 
       // View
       Char('v') => center(buffer, window),
@@ -117,15 +118,11 @@ impl Mode for Normal {
     UpdateCommand::None
   }
 
-  fn status<'a>(&'a self) -> CowStr<'a> {
+  fn status(&self) -> CowStr {
     match &self.toast {
       Some(toast) => toast.into(),
       None => "normal".into(),
     }
-  }
-
-  fn preview_selections(&self) -> Option<&Vec<Selection>> {
-    None
   }
 }
 

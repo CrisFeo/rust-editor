@@ -31,11 +31,7 @@ impl Mode for Insert {
     UpdateCommand::None
   }
 
-  fn status<'a>(&'a self) -> CowStr<'a> {
+  fn status(&self) -> CowStr {
     "insert".into()
-  }
-
-  fn preview_selections(&self) -> Option<&Vec<Selection>> {
-    None
   }
 }

@@ -25,10 +25,10 @@ fn main() {
       //Color(78,  78,  78 ), // ramp 1
       //Color(188, 188, 188), // ramp 2
       // e-ink terminal
-      Color(120,  120,  120),
+      Color(120, 120, 120),
       Color(255, 255, 255),
       Color(188, 188, 188),
-      Color(0,   0,   0  ),
+      Color(0, 0, 0),
     );
     let mut window = Window::default();
     loop {
