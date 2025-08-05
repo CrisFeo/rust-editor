@@ -9,6 +9,12 @@ impl Normal {
   pub fn switch_to() -> UpdateCommand {
     UpdateCommand::Switch(Box::new(Self::default()))
   }
+
+  pub fn switch_to_with_toast(toast: impl Into<String>) -> UpdateCommand {
+    UpdateCommand::Switch(Box::new(Self {
+      toast: Some(toast.into()),
+    }))
+  }
 }
 
 impl Mode for Normal {
@@ -66,7 +72,8 @@ impl Mode for Normal {
           -1,
         )
       }
-      Char('t') => {
+      Char('t') => buffer.set_selections(vec![*buffer.primary_selection()]),
+      Char('T') => {
         let selections = buffer
           .current
           .selections
@@ -77,7 +84,6 @@ impl Mode for Normal {
           .collect();
         buffer.set_selections(selections);
       }
-      Char('T') => buffer.set_selections(vec![*buffer.primary_selection()]),
       Char('s') => return Split::switch_to(false),
       Char('S') => return Split::switch_to(true),
       Char('g') => return Seek::switch_to(false),
@@ -104,8 +110,10 @@ impl Mode for Normal {
       }
       Char('z') => buffer.undo(),
       Char('Z') => buffer.redo(),
-      Char('r') => return Pipe::switch_to(),
-
+      Char('r') => {
+        buffer.push_history();
+        return Pipe::switch_to();
+      }
       // View
       Char('v') => center(buffer, window),
       Up => window.scroll_top = window.scroll_top.saturating_sub(1),

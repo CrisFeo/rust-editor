@@ -168,8 +168,8 @@ impl Screen {
             self.set_bg(self.default_bg);
             self.set_fg(self.default_fg);
             queue!(self.output, Print(' ')).expect("should queue printing character");
-          },
-          Cell::Unchanged => {},
+          }
+          Cell::Unchanged => {}
           Cell::Changed(ch, bg, fg) => {
             self.set_cursor(row, col);
             self.set_bg(bg);

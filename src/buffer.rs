@@ -87,7 +87,7 @@ impl Buffer {
       return;
     }
     self.current.selections = selections;
-    self.adjust_selections();
+    self.merge_overlapping_selections();
   }
 
   pub fn undo(&mut self) {
@@ -123,7 +123,7 @@ impl Buffer {
         }
       }
     }
-    self.adjust_selections();
+    self.merge_overlapping_selections();
   }
 
   pub fn copy(&mut self) -> Vec<String> {
@@ -135,9 +135,7 @@ impl Buffer {
         .selections
         .get(i)
         .expect("should be able to retrieve selection at index less than length when copying");
-      let end = selection.end().min(self.current.contents.len_chars() - 1);
-      let range = selection.start()..=end;
-      let content = self.current.contents.slice(range);
+      let content = selection.slice(&self.current.contents);
       contents.push(content.into());
     }
     contents
@@ -165,10 +163,10 @@ impl Buffer {
         next_selection.adjust(&self.current.contents, change);
       }
     }
-    self.adjust_selections();
+    self.merge_overlapping_selections();
   }
 
-  fn adjust_selections(&mut self) {
+  fn merge_overlapping_selections(&mut self) {
     self.current.selections.sort_by(|a, b| {
       a.start()
         .partial_cmp(&b.start())

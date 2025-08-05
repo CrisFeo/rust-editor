@@ -1,4 +1,4 @@
-use ropey::Rope;
+use ropey::{Rope, RopeSlice};
 use std::cmp::Ordering;
 use std::mem::swap;
 
@@ -75,6 +75,12 @@ impl Selection {
 
   pub fn size(&self) -> usize {
     self.end.saturating_sub(self.start) + 1
+  }
+
+  pub fn slice<'a>(&self, contents: &'a Rope) -> RopeSlice<'a> {
+    let end = self.end().min(contents.len_chars() - 1);
+    let range = self.start()..=end;
+    contents.slice(range)
   }
 
   pub fn try_merge(&self, other: &Self) -> Option<Selection> {
