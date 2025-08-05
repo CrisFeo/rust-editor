@@ -89,16 +89,18 @@ impl Mode for Pipe {
           let (selection, output) = results
             .get_mut(i)
             .expect("should be able to retrieve selection at index less than length when piping");
-          let change_a = selection.apply(&mut buffer.current.contents, Op::RemoveAll);
-          let change_b = selection.apply(&mut buffer.current.contents, Op::InsertStr(output));
+          let change_a = selection.apply_operation(&mut buffer.current.contents, Op::RemoveAll);
+          let change_b = selection.apply_operation(&mut buffer.current.contents, Op::InsertStr(output));
           selections.push(*selection);
           for j in i + 1..results.len() {
             let (next_selection, _) = results
               .get_mut(j)
               .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation during pipe");
-            next_selection.adjust(&buffer.current.contents, change_a);
-            next_selection.adjust(&buffer.current.contents, change_b);
+            next_selection.adjust(&buffer.current.contents, &change_a);
+            next_selection.adjust(&buffer.current.contents, &change_b);
           }
+          buffer.push_history(change_a);
+          buffer.push_history(change_b);
         }
         buffer.set_selections(selections);
         return Normal::switch_to();

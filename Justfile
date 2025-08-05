@@ -7,6 +7,9 @@ check:
 fmt:
   cargo fmt
 
+test:
+  cargo test
+
 run *ARGS:
   RUST_BACKTRACE=1 cargo run --color always {{ARGS}} 2> logs.txt
 

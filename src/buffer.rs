@@ -10,7 +10,6 @@ pub struct Snapshot {
   pub primary_selection: usize,
 }
 
-#[derive(Clone)]
 pub struct Buffer {
   pub current: Snapshot,
   pub filename: Option<String>,
@@ -26,8 +25,8 @@ impl Buffer {
     };
     Self {
       current,
-      history: Default::default(),
       filename: None,
+      history: Default::default(),
     }
   }
 
@@ -48,8 +47,8 @@ impl Buffer {
     };
     Ok(Self {
       current,
-      history: Default::default(),
       filename: Some(filename),
+      history: Default::default(),
     })
   }
 
@@ -91,19 +90,35 @@ impl Buffer {
   }
 
   pub fn undo(&mut self) {
-    if let Some(snapshot) = self.history.back(&self.current) {
-      self.current = snapshot;
+    let Some(edit) = self.history.backward() else {
+      return;
     };
+    edit.apply(&mut self.current.contents);
+    // TODO replace existing selections with selected changes
+    for selection in self.current.selections.iter_mut() {
+      selection.adjust(&self.current.contents, &None);
+    }
+    self.merge_overlapping_selections();
   }
 
   pub fn redo(&mut self) {
-    if let Some(snapshot) = self.history.forward() {
-      self.current = snapshot;
+    let Some(edit) = self.history.forward() else {
+      return;
     };
+    edit.apply(&mut self.current.contents);
+    // TODO replace existing selections with selected changes
+    for selection in self.current.selections.iter_mut() {
+      selection.adjust(&self.current.contents, &None);
+    }
+    self.merge_overlapping_selections();
   }
 
-  pub fn push_history(&mut self) {
-    self.history.push(self.current.clone());
+  pub fn push_history(&mut self, change: Option<Change>) {
+    // TODO allow bundling of multiple changes into a single,logical history frame
+    let Some(change) = change else {
+      return;
+    };
+    self.history.push(change);
   }
 
   pub fn apply_operations(&mut self, ops: &[Op]) {
@@ -112,15 +127,16 @@ impl Buffer {
         let selection = self.current.selections.get_mut(i).expect(
           "should be able to retrieve selection at index less than length when applying operation",
         );
-        let change = selection.apply(&mut self.current.contents, *op);
+        let change = selection.apply_operation(&mut self.current.contents, *op);
         for j in i + 1..self.current.selections.len() {
           let next_selection = self
             .current
             .selections
             .get_mut(j)
             .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
-          next_selection.adjust(&self.current.contents, change);
+          next_selection.adjust(&self.current.contents, &change);
         }
+        self.push_history(change);
       }
     }
     self.merge_overlapping_selections();
@@ -153,15 +169,16 @@ impl Buffer {
       let content = contents
         .get(content_i)
         .expect("should be able to retrieve content at index less than length when pasting");
-      let change = selection.apply(&mut self.current.contents, Op::InsertStr(content));
+      let change = selection.apply_operation(&mut self.current.contents, Op::InsertStr(content));
       for j in selection_i + 1..self.current.selections.len() {
         let next_selection = self
           .current
           .selections
           .get_mut(j)
           .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
-        next_selection.adjust(&self.current.contents, change);
+        next_selection.adjust(&self.current.contents, &change);
       }
+      self.push_history(change);
     }
     self.merge_overlapping_selections();
   }

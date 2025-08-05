@@ -70,7 +70,7 @@ impl Mode for Normal {
           buffer.current.selections.len(),
           buffer.current.primary_selection,
           -1,
-        )
+        );
       }
       Char('t') => buffer.set_selections(vec![*buffer.primary_selection()]),
       Char('T') => {
@@ -93,25 +93,21 @@ impl Mode for Normal {
 
       // Modification
       Char('d') => {
-        buffer.push_history();
         buffer.apply_operations(&[Op::RemoveAll]);
       }
       Char('a') => {
-        buffer.push_history();
         buffer.apply_operations(&[Op::Collapse]);
         return mode::Insert::switch_to();
       }
       Char('q') => registry.set("clipboard", Register::Content(buffer.copy())),
       Char('Q') => {
         if let Some(Register::Content(contents)) = registry.get("clipboard") {
-          buffer.push_history();
           buffer.paste(contents);
         }
       }
       Char('z') => buffer.undo(),
       Char('Z') => buffer.redo(),
       Char('r') => {
-        buffer.push_history();
         return Pipe::switch_to();
       }
       // View
@@ -147,9 +143,8 @@ fn move_by_window_page(buffer: &mut Buffer, window: &mut Window, delta: isize) {
 
 fn center(buffer: &Buffer, window: &mut Window) {
   window.scroll_top = buffer
-    .current
-    .contents
-    .char_to_line(buffer.primary_selection().cursor())
+    .primary_selection()
+    .cursor_line(&buffer.current.contents)
     .saturating_sub(window.height / 2);
 }
 

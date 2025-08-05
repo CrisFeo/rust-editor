@@ -1,3 +1,4 @@
+use crate::*;
 use ropey::{Rope, RopeSlice};
 use std::cmp::Ordering;
 use std::mem::swap;
@@ -12,13 +13,6 @@ pub enum Op<'a> {
   InsertStr(&'a str),
   Remove,
   RemoveAll,
-}
-
-#[derive(Debug, Copy, Clone)]
-pub enum Change {
-  None,
-  Addition(usize, usize),
-  Removal(usize, usize),
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -77,6 +71,17 @@ impl Selection {
     self.end.saturating_sub(self.start) + 1
   }
 
+  pub fn cursor_line(&self, contents: &Rope) -> usize {
+    if contents.len_chars() == 0 {
+      return 0;
+    }
+    let cursor = self.cursor();
+    if cursor > contents.len_chars() {
+      return contents.len_lines();
+    }
+    contents.char_to_line(cursor)
+  }
+
   pub fn slice<'a>(&self, contents: &'a Rope) -> RopeSlice<'a> {
     let end = self.end().min(contents.len_chars() - 1);
     let range = self.start()..=end;
@@ -93,7 +98,7 @@ impl Selection {
     }
   }
 
-  pub fn apply(&mut self, contents: &mut Rope, op: Op) -> Change {
+  pub fn apply_operation(&mut self, contents: &mut Rope, op: Op) -> Option<Change> {
     let change = match op {
       Op::Swap => self.swap(),
       Op::Collapse => self.collapse(),
@@ -104,35 +109,39 @@ impl Selection {
       Op::Remove => self.remove(contents),
       Op::RemoveAll => self.remove_all(contents),
     };
-    self.adjust(contents, change);
+    self.adjust(contents, &change);
     change
   }
 
-  pub fn adjust(&mut self, contents: &Rope, change: Change) {
+  pub fn adjust(&mut self, contents: &Rope, change: &Option<Change>) {
     let max = contents.len_chars();
     match change {
-      Change::None => {}
-      Change::Addition(begin, delta) => {
-        let delta = delta as isize;
-        if self.start >= begin {
+      None => {
+        self.start = self.start.min(max);
+        self.end = self.end.min(max);
+      }
+      Some(Change::Addition(begin, content)) => {
+        let delta = content.len_chars() as isize;
+        if self.start >= *begin {
           self.start = step(max, self.start, delta);
         }
-        if self.end >= begin {
+        if self.end >= *begin {
           self.end = step(max, self.end, delta);
         }
       }
-      Change::Removal(begin, delta) => {
+      Some(Change::Removal(begin, content)) => {
+        let delta = content.len_chars();
         let end = begin.saturating_add(delta);
         let delta = -(delta as isize);
         if self.start >= end {
           self.start = step(max, self.start, delta);
-        } else if self.start >= begin {
-          self.start = begin;
+        } else if self.start >= *begin {
+          self.start = *begin;
         }
         if self.end >= end {
           self.end = step(max, self.end, delta);
-        } else if self.end >= begin {
-          self.end = begin;
+        } else if self.end >= *begin {
+          self.end = *begin;
         }
       }
     }
@@ -149,7 +158,7 @@ impl Selection {
     }
   }
 
-  fn swap(&mut self) -> Change {
+  fn swap(&mut self) -> Option<Change> {
     match self.side {
       Side::Start => {
         self.side = Side::End;
@@ -159,10 +168,10 @@ impl Selection {
       }
     }
     self.last_line_offset = None;
-    Change::None
+    None
   }
 
-  fn collapse(&mut self) -> Change {
+  fn collapse(&mut self) -> Option<Change> {
     match self.side {
       Side::Start => {
         self.end = self.start;
@@ -171,26 +180,26 @@ impl Selection {
         self.start = self.end;
       }
     }
-    Change::None
+    None
   }
 
-  fn move_by_char(&mut self, contents: &Rope, delta: isize) -> Change {
+  fn move_by_char(&mut self, contents: &Rope, delta: isize) -> Option<Change> {
     let max = contents.len_chars();
     match self.side {
       Side::Start => self.start = step(max, self.start, delta),
       Side::End => self.end = step(max, self.end, delta),
     };
     self.last_line_offset = None;
-    Change::None
+    None
   }
 
-  fn move_by_line(&mut self, contents: &Rope, delta: isize) -> Change {
+  fn move_by_line(&mut self, contents: &Rope, delta: isize) -> Option<Change> {
     let max = contents.len_lines();
     let cursor = self.cursor();
-    let line = contents.char_to_line(cursor);
+    let line = self.cursor_line(contents);
     let new_line = step(max, line, delta);
     if new_line >= contents.len_lines() {
-      return Change::None;
+      return None;
     }
     let line_begin = contents.line_to_char(line);
     let line_offset = {
@@ -210,47 +219,50 @@ impl Selection {
       Side::Start => self.start = new_cursor,
       Side::End => self.end = new_cursor,
     };
-    Change::None
+    None
   }
 
-  fn insert_char(&mut self, contents: &mut Rope, value: char) -> Change {
+  fn insert_char(&mut self, contents: &mut Rope, value: char) -> Option<Change> {
     let cursor = self.cursor();
-    let change = Change::Addition(cursor, 1);
+    let change = Change::Addition(cursor, value.to_string().into());
     contents.insert_char(cursor, value);
     self.last_line_offset = None;
-    change
+    Some(change)
   }
 
-  fn insert_str(&mut self, contents: &mut Rope, value: &str) -> Change {
+  fn insert_str(&mut self, contents: &mut Rope, value: &str) -> Option<Change> {
     let cursor = self.cursor();
-    let change = Change::Addition(cursor, value.len());
+    let change = Change::Addition(cursor, value.into());
     contents.insert(cursor, value);
     self.last_line_offset = None;
-    change
+    Some(change)
   }
 
-  fn remove(&mut self, contents: &mut Rope) -> Change {
+  fn remove(&mut self, contents: &mut Rope) -> Option<Change> {
     let cursor = self.cursor();
     if cursor == 0 {
-      return Change::None;
+      return None;
     }
     let begin = cursor.saturating_sub(1);
-    let change = Change::Removal(begin, 1);
-    contents.remove(begin..cursor);
+    let range = begin..cursor;
+    let content = contents.slice(range.clone()).into();
+    let change = Change::Removal(begin, content);
+    contents.remove(range);
     self.last_line_offset = None;
-    change
+    Some(change)
   }
 
-  fn remove_all(&mut self, contents: &mut Rope) -> Change {
+  fn remove_all(&mut self, contents: &mut Rope) -> Option<Change> {
     let max = contents.len_chars();
     if self.start >= max {
-      return Change::None;
+      return None;
     }
-    let change = Change::Removal(self.start, self.size());
-    let end = self.end.min(max.saturating_sub(1));
-    contents.remove(self.start..=end);
+    let range = self.start..=self.end.min(max.saturating_sub(1));
+    let content = contents.slice(range.clone()).into();
+    let change = Change::Removal(self.start, content);
+    contents.remove(range);
     self.last_line_offset = None;
-    change
+    Some(change)
   }
 }
 

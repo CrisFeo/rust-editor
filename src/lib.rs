@@ -1,4 +1,5 @@
 mod buffer;
+mod change;
 mod color;
 mod history;
 mod key;
@@ -11,6 +12,7 @@ mod view;
 mod window;
 
 pub use buffer::*;
+pub use change::*;
 pub use color::*;
 pub use history::*;
 pub use key::*;

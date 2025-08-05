@@ -113,7 +113,7 @@ impl View {
       let cursor_location = match primary_selection {
         Some(primary_selection) => {
           let cursor = primary_selection.cursor();
-          let row = buffer.current.contents.char_to_line(cursor);
+          let row = primary_selection.cursor_line(&buffer.current.contents);
           let col = cursor.saturating_sub(buffer.current.contents.line_to_char(row));
           format!(" {}:{}", row, col)
         }
