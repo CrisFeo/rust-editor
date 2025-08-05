@@ -13,12 +13,16 @@ impl From<Color> for crossterm::style::Color {
 }
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-struct Cell(char, Color, Color);
+enum Cell {
+  Unknown,
+  Unchanged,
+  Changed(char, Color, Color),
+}
 
 pub struct Screen {
   _held_stderr: Hold,
   output: BufWriter<Stdout>,
-  buffer: Vec<Option<Cell>>,
+  buffer: Vec<Cell>,
   width: usize,
   height: usize,
   current_cursor: (usize, usize),
@@ -50,7 +54,7 @@ impl Screen {
     };
     let mut buffer = Vec::with_capacity(width * height);
     for _ in 0..(width * height) {
-      buffer.push(Some(Cell(' ', bg, fg)));
+      buffer.push(Cell::Unknown);
     }
     Self {
       _held_stderr: held_stderr,
@@ -104,11 +108,7 @@ impl Screen {
         Event::Resize(width, height) => {
           self.width = width as usize;
           self.height = height as usize;
-          self.buffer.resize(self.width * self.height, None);
-          let blank = Cell(' ', self.default_bg, self.default_fg);
-          for i in 0..self.buffer.len() {
-            self.buffer[i] = Some(blank);
-          }
+          self.buffer.resize(self.width * self.height, Cell::Unknown);
         }
         _ => {}
       }
@@ -116,14 +116,12 @@ impl Screen {
   }
 
   pub fn clear(&mut self) {
-    let blank = Cell(' ', self.default_bg, self.default_fg);
+    let blank = Cell::Changed(' ', self.default_bg, self.default_fg);
     for cell in &mut self.buffer {
-      if let Some(c) = cell {
-        if *c == blank {
-          *cell = None;
-        } else {
-          *cell = Some(blank);
-        }
+      if *cell == blank {
+        *cell = Cell::Unchanged;
+      } else {
+        *cell = blank;
       }
     }
   }
@@ -132,7 +130,7 @@ impl Screen {
     if row >= self.height || col >= self.width {
       return;
     }
-    self.buffer[row * self.width + col] = Some(Cell(ch, bg, fg));
+    self.buffer[row * self.width + col] = Cell::Changed(ch, bg, fg);
     if col < self.width {
       self.current_cursor = (row, col + 1);
     } else {
@@ -164,11 +162,20 @@ impl Screen {
   pub fn present(&mut self) {
     for row in 0..self.height {
       for col in 0..self.width {
-        if let Some(Cell(ch, bg, fg)) = self.buffer[row * self.width + col] {
-          self.set_cursor(row, col);
-          self.set_bg(bg);
-          self.set_fg(fg);
-          queue!(self.output, Print(ch)).expect("should queue printing character");
+        match self.buffer[row * self.width + col] {
+          Cell::Unknown => {
+            self.set_cursor(row, col);
+            self.set_bg(self.default_bg);
+            self.set_fg(self.default_fg);
+            queue!(self.output, Print(' ')).expect("should queue printing character");
+          },
+          Cell::Unchanged => {},
+          Cell::Changed(ch, bg, fg) => {
+            self.set_cursor(row, col);
+            self.set_bg(bg);
+            self.set_fg(fg);
+            queue!(self.output, Print(ch)).expect("should queue printing character");
+          }
         }
       }
     }
