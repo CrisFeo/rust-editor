@@ -15,8 +15,8 @@ impl Change {
   }
 
   pub fn apply(&self, contents: &mut Rope) {
-    // TODO there might be a better way to insert this change into the target rope
     match self {
+      // TODO there might be a better way to insert this change into the target rope
       Change::Addition(i, c) => contents.insert(*i, &c.to_string()),
       Change::Removal(i, c) => contents.remove(*i..i+c.len_chars()),
     }

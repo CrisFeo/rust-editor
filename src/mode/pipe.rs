@@ -46,8 +46,8 @@ impl Mode for Pipe {
         command.stdout(Stdio::piped());
         command.stderr(Stdio::piped());
         let mut error = None;
-        let mut results = Vec::with_capacity(buffer.current.selections.len());
-        for selection in buffer.current.selections.iter() {
+        let mut results = Vec::with_capacity(buffer.selections.len());
+        for selection in buffer.selections.iter() {
           let mut child = match command.spawn() {
             Ok(child) => child,
             Err(e) => {
@@ -63,7 +63,7 @@ impl Mode for Pipe {
               break;
             }
           };
-          let input = selection.slice(&buffer.current.contents);
+          let input = selection.slice(&buffer.contents);
           let input = input.bytes().collect::<Vec<u8>>();
           if let Err(e) = stdin.write_all(&input) {
             let msg = format!("failed to write to child process stdin: {:?}", e);
@@ -89,15 +89,15 @@ impl Mode for Pipe {
           let (selection, output) = results
             .get_mut(i)
             .expect("should be able to retrieve selection at index less than length when piping");
-          let change_a = selection.apply_operation(&mut buffer.current.contents, Op::RemoveAll);
-          let change_b = selection.apply_operation(&mut buffer.current.contents, Op::InsertStr(output));
+          let change_a = selection.apply_operation(&mut buffer.contents, Op::RemoveAll);
+          let change_b = selection.apply_operation(&mut buffer.contents, Op::InsertStr(output));
           selections.push(*selection);
           for j in i + 1..results.len() {
             let (next_selection, _) = results
               .get_mut(j)
               .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation during pipe");
-            next_selection.adjust(&buffer.current.contents, &change_a);
-            next_selection.adjust(&buffer.current.contents, &change_b);
+            next_selection.adjust(&buffer.contents, &change_a);
+            next_selection.adjust(&buffer.contents, &change_b);
           }
           change_a.map(|c| buffer.history.record(c));
           change_b.map(|c| buffer.history.record(c));

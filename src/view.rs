@@ -43,12 +43,12 @@ impl View {
     let (mut selection_iter, primary_selection) = match &mode.preview_selections() {
       Some(selections) => (selections.iter(), None),
       None => (
-        buffer.current.selections.iter(),
+        buffer.selections.iter(),
         Some(buffer.primary_selection()),
       ),
     };
     let mut current_selection = selection_iter.next();
-    let start_index = window.to_index(&buffer.current.contents, 0, 0);
+    let start_index = window.to_index(&buffer.contents, 0, 0);
     while let Some(selection) = current_selection {
       if selection.end() >= start_index {
         break;
@@ -56,7 +56,6 @@ impl View {
       current_selection = selection_iter.next();
     }
     let lines = buffer
-      .current
       .contents
       .get_lines_at(window.scroll_top)
       .into_iter()
@@ -72,7 +71,7 @@ impl View {
         .take(width)
         .enumerate();
       for (col, ch) in chars {
-        let index = window.to_index(&buffer.current.contents, row, col);
+        let index = window.to_index(&buffer.contents, row, col);
         while let Some(selection) = current_selection {
           if index <= selection.end() {
             break;
@@ -96,11 +95,11 @@ impl View {
       }
     }
     let buffer_end = window.to_scroll_position(
-      &buffer.current.contents,
-      buffer.current.contents.len_chars(),
+      &buffer.contents,
+      buffer.contents.len_chars(),
     );
     if let Some((row, col)) = buffer_end {
-      let index = buffer.current.contents.len_chars();
+      let index = buffer.contents.len_chars();
       let (is_selection, is_primary, is_cursor) =
         Self::properties(index, current_selection, primary_selection);
       if is_selection {
@@ -113,8 +112,8 @@ impl View {
       let cursor_location = match primary_selection {
         Some(primary_selection) => {
           let cursor = primary_selection.cursor();
-          let row = primary_selection.cursor_line(&buffer.current.contents);
-          let col = cursor.saturating_sub(buffer.current.contents.line_to_char(row));
+          let row = primary_selection.cursor_line(&buffer.contents);
+          let col = cursor.saturating_sub(buffer.contents.line_to_char(row));
           format!(" {}:{}", row, col)
         }
         None => "".to_string(),

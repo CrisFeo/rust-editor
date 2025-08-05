@@ -56,30 +56,29 @@ impl Mode for Normal {
       // Selections
       Char('u') => buffer.set_selections(vec![Selection::new_at_end(
         0,
-        buffer.current.contents.len_chars(),
+        buffer.contents.len_chars(),
       )]),
       Char('y') => {
-        buffer.current.primary_selection = wrap_add(
-          buffer.current.selections.len(),
-          buffer.current.primary_selection,
+        buffer.primary_selection = wrap_add(
+          buffer.selections.len(),
+          buffer.primary_selection,
           1,
         )
       }
       Char('Y') => {
-        buffer.current.primary_selection = wrap_add(
-          buffer.current.selections.len(),
-          buffer.current.primary_selection,
+        buffer.primary_selection = wrap_add(
+          buffer.selections.len(),
+          buffer.primary_selection,
           -1,
         );
       }
       Char('t') => buffer.set_selections(vec![*buffer.primary_selection()]),
       Char('T') => {
         let selections = buffer
-          .current
           .selections
           .iter()
           .enumerate()
-          .filter(|&(i, _)| i != buffer.current.primary_selection)
+          .filter(|&(i, _)| i != buffer.primary_selection)
           .map(|(_, &v)| v)
           .collect();
         buffer.set_selections(selections);
@@ -140,7 +139,7 @@ fn move_by_window_page(buffer: &mut Buffer, window: &mut Window, delta: isize) {
 fn center(buffer: &Buffer, window: &mut Window) {
   window.scroll_top = buffer
     .primary_selection()
-    .cursor_line(&buffer.current.contents)
+    .cursor_line(&buffer.contents)
     .saturating_sub(window.height / 2);
 }
 

@@ -56,18 +56,18 @@ impl Mode for Seek {
         let command = self.command.to_string();
         let result = match self.reverse {
           true => reverse(
-            &buffer.current.contents,
-            &buffer.current.selections,
+            &buffer.contents,
+            &buffer.selections,
             &command,
           ),
           false => forward(
-            &buffer.current.contents,
-            &buffer.current.selections,
+            &buffer.contents,
+            &buffer.selections,
             &command,
           ),
         };
         if let ModeResult::Ok(selections) = result {
-          buffer.current.primary_selection = selections.len().saturating_sub(1);
+          buffer.primary_selection = selections.len().saturating_sub(1);
           buffer.set_selections(selections);
         }
         return Normal::switch_to();
@@ -101,13 +101,13 @@ fn update_preview(mode: &mut Seek, buffer: &Buffer) {
   let command = mode.command.to_string();
   let result = match mode.reverse {
     true => reverse(
-      &buffer.current.contents,
-      &buffer.current.selections,
+      &buffer.contents,
+      &buffer.selections,
       &command,
     ),
     false => forward(
-      &buffer.current.contents,
-      &buffer.current.selections,
+      &buffer.contents,
+      &buffer.selections,
       &command,
     ),
   };

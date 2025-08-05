@@ -46,7 +46,7 @@ fn main() {
         .and_then(|ps| ps.first())
         .unwrap_or(buffer.primary_selection())
         .cursor();
-      window.scroll_into_view(&buffer.current.contents, target_cursor);
+      window.scroll_into_view(&buffer.contents, target_cursor);
     }
   });
   if let Err(e) = result {

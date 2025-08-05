@@ -3,29 +3,21 @@ use ropey::Rope;
 use std::fs::{File, OpenOptions};
 use std::io::{BufReader, BufWriter, ErrorKind, Result};
 
-#[derive(Clone, PartialEq)]
-pub struct Snapshot {
+pub struct Buffer {
+  pub filename: Option<String>,
   pub contents: Rope,
   pub selections: Vec<Selection>,
   pub primary_selection: usize,
-}
-
-pub struct Buffer {
-  pub current: Snapshot,
-  pub filename: Option<String>,
   pub history: History,
 }
 
 impl Buffer {
   pub fn new_scratch() -> Self {
-    let current = Snapshot {
+    Self {
+      filename: None,
       contents: Rope::new(),
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
-    };
-    Self {
-      current,
-      filename: None,
       history: Default::default(),
     }
   }
@@ -40,14 +32,11 @@ impl Buffer {
       Err(e) if e.kind() == ErrorKind::NotFound => Ok(Rope::new()),
       Err(e) => Err(e),
     }?;
-    let current = Snapshot {
+    Ok(Self {
+      filename: Some(filename),
       contents,
       selections: vec![Selection::new_at_end(0, 0)],
       primary_selection: 0,
-    };
-    Ok(Self {
-      current,
-      filename: Some(filename),
       history: Default::default(),
     })
   }
@@ -62,7 +51,7 @@ impl Buffer {
         }
       };
       let writer = BufWriter::new(file);
-      match self.current.contents.write_to(writer) {
+      match self.contents.write_to(writer) {
         Ok(_) => {}
         Err(e) => {
           eprintln!("{}", e);
@@ -75,9 +64,8 @@ impl Buffer {
 
   pub fn primary_selection(&self) -> &Selection {
     self
-      .current
       .selections
-      .get(self.current.primary_selection)
+      .get(self.primary_selection)
       .expect("selections should always contain a primary selection")
   }
 
@@ -85,7 +73,7 @@ impl Buffer {
     if selections.is_empty() {
       return;
     }
-    self.current.selections = selections;
+    self.selections = selections;
     self.merge_overlapping_selections();
   }
 
@@ -93,10 +81,10 @@ impl Buffer {
     let Some(changes) = self.history.backward() else {
       return;
     };
-    changes.apply(&mut self.current.contents);
+    changes.apply(&mut self.contents);
     // TODO replace existing selections with selected changes
-    for selection in self.current.selections.iter_mut() {
-      selection.adjust(&self.current.contents, &None);
+    for selection in self.selections.iter_mut() {
+      selection.adjust(&self.contents, &None);
     }
     self.merge_overlapping_selections();
   }
@@ -105,28 +93,27 @@ impl Buffer {
     let Some(changes) = self.history.forward() else {
       return;
     };
-    changes.apply(&mut self.current.contents);
+    changes.apply(&mut self.contents);
     // TODO replace existing selections with selected changes
-    for selection in self.current.selections.iter_mut() {
-      selection.adjust(&self.current.contents, &None);
+    for selection in self.selections.iter_mut() {
+      selection.adjust(&self.contents, &None);
     }
     self.merge_overlapping_selections();
   }
 
   pub fn apply_operations(&mut self, ops: &[Op]) {
     for op in ops.iter() {
-      for i in 0..self.current.selections.len() {
-        let selection = self.current.selections.get_mut(i).expect(
+      for i in 0..self.selections.len() {
+        let selection = self.selections.get_mut(i).expect(
           "should be able to retrieve selection at index less than length when applying operation",
         );
-        let change = selection.apply_operation(&mut self.current.contents, *op);
-        for j in i + 1..self.current.selections.len() {
+        let change = selection.apply_operation(&mut self.contents, *op);
+        for j in i + 1..self.selections.len() {
           let next_selection = self
-            .current
             .selections
             .get_mut(j)
             .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
-          next_selection.adjust(&self.current.contents, &change);
+          next_selection.adjust(&self.contents, &change);
         }
         change.map(|c| self.history.record(c));
       }
@@ -135,40 +122,37 @@ impl Buffer {
   }
 
   pub fn copy(&mut self) -> Vec<String> {
-    let mut contents = Vec::with_capacity(self.current.selections.len());
-    for i in 0..self.current.selections.len() {
-      let i = (self.current.primary_selection + i) % self.current.selections.len();
+    let mut contents = Vec::with_capacity(self.selections.len());
+    for i in 0..self.selections.len() {
+      let i = (self.primary_selection + i) % self.selections.len();
       let selection = self
-        .current
         .selections
         .get(i)
         .expect("should be able to retrieve selection at index less than length when copying");
-      let content = selection.slice(&self.current.contents);
+      let content = selection.slice(&self.contents);
       contents.push(content.into());
     }
     contents
   }
 
   pub fn paste(&mut self, contents: &[String]) {
-    for content_i in 0..self.current.selections.len().min(contents.len()) {
+    for content_i in 0..self.selections.len().min(contents.len()) {
       let selection_i =
-        (self.current.primary_selection + content_i) % self.current.selections.len();
+        (self.primary_selection + content_i) % self.selections.len();
       let selection = self
-        .current
         .selections
         .get_mut(selection_i)
         .expect("should be able to retrieve selection at index less than length when pasting");
       let content = contents
         .get(content_i)
         .expect("should be able to retrieve content at index less than length when pasting");
-      let change = selection.apply_operation(&mut self.current.contents, Op::InsertStr(content));
-      for j in selection_i + 1..self.current.selections.len() {
+      let change = selection.apply_operation(&mut self.contents, Op::InsertStr(content));
+      for j in selection_i + 1..self.selections.len() {
         let next_selection = self
-          .current
           .selections
           .get_mut(j)
           .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
-        next_selection.adjust(&self.current.contents, &change);
+        next_selection.adjust(&self.contents, &change);
       }
       change.map(|c| self.history.record(c));
     }
@@ -177,14 +161,14 @@ impl Buffer {
   }
 
   fn merge_overlapping_selections(&mut self) {
-    self.current.selections.sort_by(|a, b| {
+    self.selections.sort_by(|a, b| {
       a.start()
         .partial_cmp(&b.start())
         .expect("selection bounds should be comparable")
     });
-    self.current.selections = {
+    self.selections = {
       let mut selections = vec![];
-      let mut selections_iter = self.current.selections.drain(..);
+      let mut selections_iter = self.selections.drain(..);
       let mut current = selections_iter.next();
       while let Some(current_value) = current {
         let mut next = selections_iter.next();
@@ -201,8 +185,8 @@ impl Buffer {
       }
       selections
     };
-    if self.current.primary_selection >= self.current.selections.len() {
-      self.current.primary_selection = self.current.selections.len().saturating_sub(1);
+    if self.primary_selection >= self.selections.len() {
+      self.primary_selection = self.selections.len().saturating_sub(1);
     }
   }
 }
