@@ -99,9 +99,10 @@ impl Mode for Pipe {
             next_selection.adjust(&buffer.current.contents, &change_a);
             next_selection.adjust(&buffer.current.contents, &change_b);
           }
-          buffer.push_history(change_a);
-          buffer.push_history(change_b);
+          change_a.map(|c| buffer.history.record(c));
+          change_b.map(|c| buffer.history.record(c));
         }
+        buffer.history.commit();
         buffer.set_selections(selections);
         return Normal::switch_to();
       }

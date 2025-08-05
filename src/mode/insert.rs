@@ -21,7 +21,10 @@ impl Mode for Insert {
     use crate::key::Key::*;
     match key {
       Char('q') if modifiers.control => return Normal::switch_to(),
-      Esc => return Normal::switch_to(),
+      Esc => {
+        buffer.history.commit();
+        return Normal::switch_to();
+      },
       Backspace => buffer.apply_operations(&[Op::Remove]),
       Tab => buffer.apply_operations(&[Op::InsertChar(' '), Op::InsertChar(' ')]),
       Enter => buffer.apply_operations(&[Op::InsertChar('\n')]),

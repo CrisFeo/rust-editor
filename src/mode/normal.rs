@@ -94,11 +94,9 @@ impl Mode for Normal {
       // Modification
       Char('d') => {
         buffer.apply_operations(&[Op::RemoveAll]);
+        buffer.history.commit();
       }
-      Char('a') => {
-        buffer.apply_operations(&[Op::Collapse]);
-        return mode::Insert::switch_to();
-      }
+      Char('a') => return mode::Insert::switch_to(),
       Char('q') => registry.set("clipboard", Register::Content(buffer.copy())),
       Char('Q') => {
         if let Some(Register::Content(contents)) = registry.get("clipboard") {
@@ -107,9 +105,7 @@ impl Mode for Normal {
       }
       Char('z') => buffer.undo(),
       Char('Z') => buffer.redo(),
-      Char('r') => {
-        return Pipe::switch_to();
-      }
+      Char('r') => return Pipe::switch_to(),
       // View
       Char('v') => center(buffer, window),
       Up => window.scroll_top = window.scroll_top.saturating_sub(1),

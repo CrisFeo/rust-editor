@@ -8,7 +8,7 @@ fmt:
   cargo fmt
 
 test:
-  cargo test
+  cargo test --color always
 
 run *ARGS:
   RUST_BACKTRACE=1 cargo run --color always {{ARGS}} 2> logs.txt
@@ -16,7 +16,7 @@ run *ARGS:
 logs:
   less -R logs.txt
 
-watch:
+watch target:
   #!/bin/sh
   set -euf
   last_hash=''
@@ -29,7 +29,7 @@ watch:
       if [ -n "$running_pid" ]; then
         kill -s SIGINT "$running_pid"
       fi
-      just check 2>&1 | less -R -K &
+      just {{target}} 2>&1 | less -R -K &
       running_pid="$!"
     fi
     sleep 1

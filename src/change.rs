@@ -7,11 +7,10 @@ pub enum Change {
 }
 
 impl Change {
-  pub fn invert(&self) -> Self {
-    // Note that cloning ropes like we do here is O(1)
+  pub fn invert(self) -> Self {
     match self {
-      Change::Addition(index, content) => Change::Removal(*index, content.clone()),
-      Change::Removal(index, content) => Change::Addition(*index, content.clone()),
+      Change::Addition(index, content) => Change::Removal(index, content),
+      Change::Removal(index, content) => Change::Addition(index, content),
     }
   }
 

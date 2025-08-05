@@ -13,7 +13,7 @@ pub struct Snapshot {
 pub struct Buffer {
   pub current: Snapshot,
   pub filename: Option<String>,
-  history: History,
+  pub history: History,
 }
 
 impl Buffer {
@@ -90,10 +90,10 @@ impl Buffer {
   }
 
   pub fn undo(&mut self) {
-    let Some(edit) = self.history.backward() else {
+    let Some(changes) = self.history.backward() else {
       return;
     };
-    edit.apply(&mut self.current.contents);
+    changes.apply(&mut self.current.contents);
     // TODO replace existing selections with selected changes
     for selection in self.current.selections.iter_mut() {
       selection.adjust(&self.current.contents, &None);
@@ -102,23 +102,15 @@ impl Buffer {
   }
 
   pub fn redo(&mut self) {
-    let Some(edit) = self.history.forward() else {
+    let Some(changes) = self.history.forward() else {
       return;
     };
-    edit.apply(&mut self.current.contents);
+    changes.apply(&mut self.current.contents);
     // TODO replace existing selections with selected changes
     for selection in self.current.selections.iter_mut() {
       selection.adjust(&self.current.contents, &None);
     }
     self.merge_overlapping_selections();
-  }
-
-  pub fn push_history(&mut self, change: Option<Change>) {
-    // TODO allow bundling of multiple changes into a single,logical history frame
-    let Some(change) = change else {
-      return;
-    };
-    self.history.push(change);
   }
 
   pub fn apply_operations(&mut self, ops: &[Op]) {
@@ -136,7 +128,7 @@ impl Buffer {
             .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
           next_selection.adjust(&self.current.contents, &change);
         }
-        self.push_history(change);
+        change.map(|c| self.history.record(c));
       }
     }
     self.merge_overlapping_selections();
@@ -178,8 +170,9 @@ impl Buffer {
           .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
         next_selection.adjust(&self.current.contents, &change);
       }
-      self.push_history(change);
+      change.map(|c| self.history.record(c));
     }
+    self.history.commit();
     self.merge_overlapping_selections();
   }
 

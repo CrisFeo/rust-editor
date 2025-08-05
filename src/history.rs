@@ -1,27 +1,59 @@
 use crate::*;
+use ropey::Rope;
+
+#[derive(Debug, Default, PartialEq)]
+pub struct Changes(Vec<Change>);
+
+impl Changes {
+  pub fn invert(self) -> Self {
+    let mut changes = Vec::with_capacity(self.0.len());
+    for change in self.0.into_iter().rev() {
+      changes.push(change.invert());
+    }
+    Self(changes)
+  }
+
+  pub fn apply(&self, contents: &mut Rope) {
+    for change in self.0.iter() {
+      change.apply(contents);
+    }
+  }
+}
 
 #[derive(Default)]
 pub struct History {
-  prev: Vec<Change>,
-  next: Vec<Change>,
+  pending: Option<Changes>,
+  prev: Vec<Changes>,
+  next: Vec<Changes>,
 }
 
 impl History {
-  pub fn push(&mut self, edit: Change) -> &Change {
-    self.prev.push(edit);
-    self.next.clear();
-    self.prev.last().expect("should be able to retrieve last edit during push")
+  pub fn record(&mut self, change: Change) -> &Change {
+    let pending = self.pending.get_or_insert_default();
+    pending.0.push(change);
+    pending.0.last().expect("should be able to retrieve last change when recording")
   }
 
-  pub fn backward(&mut self) -> Option<&Change> {
-    let edit = self.prev.pop()?;
-    self.next.push(edit.invert());
+  pub fn commit(&mut self) {
+    let Some(pending) = self.pending.take() else {
+      return;
+    };
+    self.prev.push(pending);
+    self.next.clear();
+  }
+
+  pub fn backward(&mut self) -> Option<&Changes> {
+    self.commit();
+    let change = self.prev.pop()?;
+    self.next.push(change.invert());
     self.next.last()
   }
 
-  pub fn forward(&mut self) -> Option<&Change> {
-    let edit = self.next.pop()?;
-    self.prev.push(edit.invert());
+  pub fn forward(&mut self) -> Option<&Changes> {
+    self.commit();
+    self.pending.take();
+    let change = self.next.pop()?;
+    self.prev.push(change.invert());
     self.prev.last()
   }
 }
@@ -33,31 +65,47 @@ mod tests {
 
   #[test]
   fn kitchen_sink() {
-    let mut contents = Rope::new();
-    let mut a = |e: &Change| {
-      e.apply(&mut contents);
-      contents.clone()
-    };
+    let mut c = Rope::new();
     let mut h = History::default();
-    assert_eq!(a(h.push(Change::Addition(0, "hello world".into()))), "hello world");
-    assert_eq!(a(h.push(Change::Removal(6, "world".into()))), "hello ");
-    assert_eq!(a(h.push(Change::Addition(6, "there".into()))), "hello there");
-    assert_eq!(a(h.push(Change::Addition(11, " yall".into()))), "hello there yall");
-    assert_eq!(a(h.backward().unwrap()), "hello there");
-    assert_eq!(a(h.backward().unwrap()), "hello ");
-    assert_eq!(a(h.backward().unwrap()), "hello world");
-    assert_eq!(a(h.backward().unwrap()), "");
+    test_record(&mut c, h.record(add(0, "hello world")), "hello world");
+    test_record(&mut c, h.record(del(6, "world")), "hello ");
+    h.commit();
+    test_record(&mut c, h.record(add(6, "there")), "hello there");
+    h.commit();
+    test_record(&mut c, h.record(add(11, " yall")), "hello there yall");
+    test_seek(&mut c, h.backward().unwrap(), "hello there");
+    test_record(&mut c, h.record(del(9, "re")), "hello the");
+    test_seek(&mut c, h.backward().unwrap(), "hello there");
+    test_seek(&mut c, h.backward().unwrap(), "hello ");
+    test_seek(&mut c, h.backward().unwrap(), "");
     assert_eq!(h.backward(), None);
-    assert_eq!(a(h.forward().unwrap()), "hello world");
-    assert_eq!(a(h.forward().unwrap()), "hello ");
-    assert_eq!(a(h.forward().unwrap()), "hello there");
-    assert_eq!(a(h.forward().unwrap()), "hello there yall");
+    test_seek(&mut c, h.forward().unwrap(), "hello ");
+    test_seek(&mut c, h.forward().unwrap(), "hello there");
+    test_seek(&mut c, h.forward().unwrap(), "hello the");
     assert_eq!(h.forward(), None);
-    assert_eq!(a(h.backward().unwrap()), "hello there");
-    assert_eq!(a(h.backward().unwrap()), "hello ");
-    assert_eq!(a(h.push(Change::Addition(6, "friends".into()))), "hello friends");
-    assert_eq!(a(h.push(Change::Addition(13, " and countrymen".into()))), "hello friends and countrymen");
-    assert_eq!(a(h.backward().unwrap()), "hello friends");
-    assert_eq!(a(h.forward().unwrap()), "hello friends and countrymen");
+    test_seek(&mut c, h.backward().unwrap(), "hello there");
+    test_seek(&mut c, h.backward().unwrap(), "hello ");
+    test_record(&mut c, h.record(add(6, "friends")), "hello friends");
+    test_record(&mut c, h.record(add(13, " and countrymen")), "hello friends and countrymen");
+    h.commit();
+    test_seek(&mut c, h.backward().unwrap(), "hello ");
+    test_seek(&mut c, h.forward().unwrap(), "hello friends and countrymen");
+  }
+
+  fn add(index: usize, content: &str) -> Change {
+    Change::Addition(index, content.into())
+  }
+  fn del(index: usize, content: &str) -> Change {
+    Change::Removal(index, content.into())
+  }
+
+  fn test_record(contents: &mut Rope, change: &Change, expected: &str) {
+    change.apply(contents);
+    assert_eq!(contents, expected);
+  }
+
+  fn test_seek(contents: &mut Rope, changes: &Changes, expected: &str) {
+    changes.apply(contents);
+    assert_eq!(contents, expected);
   }
 }
