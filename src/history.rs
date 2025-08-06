@@ -1,24 +1,4 @@
 use crate::*;
-use ropey::Rope;
-
-#[derive(Debug, Default, PartialEq)]
-pub struct Changes(Vec<Change>);
-
-impl Changes {
-  pub fn invert(self) -> Self {
-    let mut changes = Vec::with_capacity(self.0.len());
-    for change in self.0.into_iter().rev() {
-      changes.push(change.invert());
-    }
-    Self(changes)
-  }
-
-  pub fn apply(&self, contents: &mut Rope) {
-    for change in self.0.iter() {
-      change.apply(contents);
-    }
-  }
-}
 
 #[derive(Default)]
 pub struct History {
@@ -30,8 +10,7 @@ pub struct History {
 impl History {
   pub fn record(&mut self, change: Change) -> &Change {
     let pending = self.pending.get_or_insert_default();
-    pending.0.push(change);
-    pending.0.last().expect("should be able to retrieve last change when recording")
+    pending.push(change)
   }
 
   pub fn commit(&mut self) {
