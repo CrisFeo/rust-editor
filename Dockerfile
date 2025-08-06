@@ -16,13 +16,16 @@ RUN apk update
 RUN apk add --no-cache \
   bash                 \
   less                 \
+  tmux                 \
+  ripgrep              \
+  kakoune              \
   openssh              \
   git                  \
-  just                 \
-  rustup               \
-  build-base
+  build-base           \
+  rustup
 
 USER $USER
 
 RUN /usr/bin/rustup-init -y
-RUN echo '. $HOME/.cargo/env' > $HOME/.bashrc
+RUN echo '. $HOME/.cargo/env' >> $HOME/.bashrc
+RUN echo 'export PS1="\w\n\[\e[;33m\]>\[\e[m\] "' >> $HOME/.bashrc

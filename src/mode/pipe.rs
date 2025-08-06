@@ -51,7 +51,7 @@ impl Mode for Pipe {
           let mut child = match command.spawn() {
             Ok(child) => child,
             Err(e) => {
-              let msg = format!("failed to spawn child process: {:?}", e);
+              let msg = format!("failed to spawn child process: {e:?}");
               error = Some(msg);
               break;
             }
@@ -66,7 +66,7 @@ impl Mode for Pipe {
           let input = selection.slice(&buffer.contents);
           let input = input.bytes().collect::<Vec<u8>>();
           if let Err(e) = stdin.write_all(&input) {
-            let msg = format!("failed to write to child process stdin: {:?}", e);
+            let msg = format!("failed to write to child process stdin: {e:?}");
             error = Some(msg);
             break;
           }
@@ -74,7 +74,7 @@ impl Mode for Pipe {
           let output = match child.wait_with_output() {
             Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
             Err(e) => {
-              let msg = format!("failed to read child process stdout: {:?}", e);
+              let msg = format!("failed to read child process stdout: {e:?}");
               error = Some(msg);
               break;
             }

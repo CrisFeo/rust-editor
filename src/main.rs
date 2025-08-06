@@ -12,7 +12,7 @@ fn main() {
     let mut buffer = match buffer {
       Ok(buffer) => buffer,
       Err(e) => {
-        eprintln!("{}", e);
+        eprintln!("{e}");
         exit(1);
       }
     };

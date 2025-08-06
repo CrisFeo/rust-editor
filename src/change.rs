@@ -1,3 +1,4 @@
+use crate::*;
 use ropey::Rope;
 
 #[derive(Debug, PartialEq)]
@@ -24,6 +25,7 @@ impl Change {
 
   pub fn selections(&self) -> Vec<Selection> {
     // TODO
+    Vec::new()
   }
 }
 

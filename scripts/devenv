@@ -1,9 +1,8 @@
-#!/usr/bin/env bash
-set -Eeuo pipefail
+#!/bin/sh
+set -euf
+source "$(dirname "$0")/config"
 
-PROJECT_NAME="$(basename "$PWD")"
 CONTAINER_NAME="$PROJECT_NAME-devenv"
-ADDITIONAL_DOCKER_ARGS=""
 
 if [ "${1-}" = '--rebuild' ]; then
   echo "$CONTAINER_NAME rebuild requested, deleting existing container..."
@@ -17,7 +16,7 @@ if [ "$STATUS" = 'running' ]; then
     --interactive   \
     --tty           \
     $CONTAINER_NAME \
-    /bin/bash
+    tmux
 elif [ "$STATUS" = 'exited' ]; then
   echo "$CONTAINER_NAME stopped, restarting container..."
   docker start      \
@@ -40,6 +39,7 @@ else
     --tty                                                                    \
     --volume '//var/run/docker.sock://var/run/docker.sock'                   \
     --volume "$SSH_AUTH_SOCK:/ssh-agent"                                     \
+    --env "SHELL=/bin/bash"                                                  \
     --env "SSH_AUTH_SOCK=/ssh-agent"                                         \
     --env "LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER"                   \
     --env "PS1=$PS1"                                                         \
@@ -47,5 +47,5 @@ else
     --workdir "/$PROJECT_NAME"                                               \
     $ADDITIONAL_DOCKER_ARGS                                                  \
     "$CONTAINER_NAME:latest"                                                 \
-    /bin/bash
+    tmux
 fi

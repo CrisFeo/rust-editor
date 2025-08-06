@@ -1,0 +1,9 @@
+export PROJECT_NAME='rust-editor'
+export ADDITIONAL_DOCKER_ARGS=" \
+  --mount type=bind,source=$HOME/.gitconfig,target=$HOME/.gitconfig,ro   \
+  --mount type=bind,source=$HOME/.tmux.conf,target=$HOME/.tmux.conf,ro   \
+  --mount type=bind,source=$HOME/.config/kak,target=$HOME/.config/kak,ro \
+  --publish 8000:8000 \
+"
+export CARGO_ARGS=""
+

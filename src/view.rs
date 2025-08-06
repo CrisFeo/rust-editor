@@ -114,25 +114,25 @@ impl View {
           let cursor = primary_selection.cursor();
           let row = primary_selection.cursor_line(&buffer.contents);
           let col = cursor.saturating_sub(buffer.contents.line_to_char(row));
-          format!(" {}:{}", row, col)
+          format!(" {row}:{col}")
         }
         None => "".to_string(),
       };
       let buffer_name = match &buffer.filename {
-        Some(filename) => format!(" {}", filename),
+        Some(filename) => format!(" {filename}"),
         None => "".to_string(),
       };
-      format!("{}{}", cursor_location, buffer_name)
+      format!("{cursor_location}{buffer_name}")
     };
     let status_min_size = status_left.len() + status_right.len();
     let status = if status_min_size < width {
       let status_gap_size = width - status_min_size;
       let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
-      format!("{}{}{}", status_left, status_gap, status_right)
+      format!("{status_left}{status_gap}{status_right}")
     } else if status_left.len() < width {
       let status_gap_size = width - status_left.len();
       let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
-      format!("{}{}", status_left, status_gap)
+      format!("{status_left}{status_gap}")
     } else {
       (0..width).map(|_| " ").collect::<String>()
     };

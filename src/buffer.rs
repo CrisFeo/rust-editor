@@ -46,7 +46,7 @@ impl Buffer {
       let file = match File::create(filename) {
         Ok(file) => file,
         Err(e) => {
-          eprintln!("{}", e);
+          eprintln!("{e}");
           return false;
         }
       };
@@ -54,7 +54,7 @@ impl Buffer {
       match self.contents.write_to(writer) {
         Ok(_) => {}
         Err(e) => {
-          eprintln!("{}", e);
+          eprintln!("{e}");
           return false;
         }
       };
