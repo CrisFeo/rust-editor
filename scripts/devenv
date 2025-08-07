@@ -39,6 +39,8 @@ else
     --tty                                                                    \
     --volume '//var/run/docker.sock://var/run/docker.sock'                   \
     --volume "$SSH_AUTH_SOCK:/ssh-agent"                                     \
+    --env "TERM=$TERM"                                                       \
+    --env "LANG=$LANG"                                                       \
     --env "SHELL=/bin/bash"                                                  \
     --env "SSH_AUTH_SOCK=/ssh-agent"                                         \
     --env "LOCAL_WORKSPACE_FOLDER=$LOCAL_WORKSPACE_FOLDER"                   \
