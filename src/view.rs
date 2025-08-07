@@ -40,110 +40,119 @@ impl View {
   pub fn render(&mut self, mode: &dyn Mode, buffer: &Buffer, window: &Window) {
     self.screen.clear();
     let (width, height) = self.screen.size();
-    let (mut selection_iter, primary_selection) = match &mode.preview_selections() {
-      Some(selections) => (selections.iter(), None),
-      None => (
-        buffer.selections.iter(),
-        Some(buffer.primary_selection()),
-      ),
+    let (selections, primary_selection) = match mode.preview_selections() {
+      Some(selections) => (selections, None),
+      None => (&buffer.selections, Some(buffer.primary_selection())),
     };
-    let mut current_selection = selection_iter.next();
-    let start_index = window.to_index(&buffer.contents, 0, 0);
-    while let Some(selection) = current_selection {
-      if selection.end() >= start_index {
-        break;
+    // render buffer contents
+    {
+      let mut selection_iter = selections.iter();
+      let mut current_selection = selection_iter.next();
+      let start_index = window.to_index(&buffer.contents, 0, 0);
+      while let Some(selection) = current_selection {
+        if selection.end() >= start_index {
+          break;
+        }
+        current_selection = selection_iter.next();
       }
-      current_selection = selection_iter.next();
-    }
-    let lines = buffer
-      .contents
-      .get_lines_at(window.scroll_top)
-      .into_iter()
-      .flatten()
-      //.take(height.saturating_sub(1))
-      .take(height)
-      .enumerate();
-    for (row, line) in lines {
-      let chars = line
-        .get_chars_at(window.scroll_left)
+      let lines = buffer
+        .contents
+        .get_lines_at(window.scroll_top)
         .into_iter()
         .flatten()
-        .take(width)
+        //.take(height.saturating_sub(1))
+        .take(height)
         .enumerate();
-      for (col, ch) in chars {
-        let index = window.to_index(&buffer.contents, row, col);
-        while let Some(selection) = current_selection {
-          if index <= selection.end() {
-            break;
-          }
-          current_selection = selection_iter.next();
-        }
-        let (is_selection, is_primary, is_cursor) =
-          Self::properties(index, current_selection, primary_selection);
-        let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
-        let ch = match ch {
-          '\n' => {
-            if !is_selection {
-              ' '
-            } else {
-              self.new_line_char
+      for (row, line) in lines {
+        let chars = line
+          .get_chars_at(window.scroll_left)
+          .into_iter()
+          .flatten()
+          .take(width)
+          .enumerate();
+        for (col, ch) in chars {
+          let index = window.to_index(&buffer.contents, row, col);
+          while let Some(selection) = current_selection {
+            if index <= selection.end() {
+              break;
             }
+            current_selection = selection_iter.next();
           }
-          ch => ch,
-        };
-        self.screen.draw(row, col, ch, bg, fg);
-      }
-    }
-    let buffer_end = window.to_scroll_position(
-      &buffer.contents,
-      buffer.contents.len_chars(),
-    );
-    if let Some((row, col)) = buffer_end {
-      let index = buffer.contents.len_chars();
-      let (is_selection, is_primary, is_cursor) =
-        Self::properties(index, current_selection, primary_selection);
-      if is_selection {
-        let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
-        self.screen.draw(row, col, self.end_of_file_char, bg, fg);
-      }
-    }
-    let status_left = mode.status();
-    let status_right = {
-      let cursor_location = match primary_selection {
-        Some(primary_selection) => {
-          let cursor = primary_selection.cursor();
-          let row = primary_selection.cursor_line(&buffer.contents);
-          let col = cursor.saturating_sub(buffer.contents.line_to_char(row));
-          format!(" {row}:{col}")
+          let (is_selection, is_primary, is_cursor) =
+            Self::properties(index, current_selection, primary_selection);
+          let (bg, fg) = self.style(is_selection, is_primary, is_cursor);
+          let ch = match ch {
+            '\n' => {
+              if !is_selection {
+                ' '
+              } else {
+                self.new_line_char
+              }
+            }
+            ch => ch,
+          };
+          self.screen.draw(row, col, ch, bg, fg);
         }
-        None => "".to_string(),
-      };
-      let buffer_name = match &buffer.filename {
-        Some(filename) => format!(" {filename}"),
-        None => "".to_string(),
-      };
-      format!("{cursor_location}{buffer_name}")
-    };
-    let status_min_size = status_left.len() + status_right.len();
-    let status = if status_min_size < width {
-      let status_gap_size = width - status_min_size;
-      let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
-      format!("{status_left}{status_gap}{status_right}")
-    } else if status_left.len() < width {
-      let status_gap_size = width - status_left.len();
-      let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
-      format!("{status_left}{status_gap}")
-    } else {
-      (0..width).map(|_| " ").collect::<String>()
-    };
-    for (i, ch) in status.chars().enumerate() {
-      self.screen.draw(
-        height.saturating_sub(1),
-        i,
-        ch,
-        self.accent_color,
-        self.ramp_0_color,
+      }
+      let buffer_end = window.to_scroll_position(
+        &buffer.contents,
+        buffer.contents.len_chars(),
       );
+      if let Some((row, col)) = buffer_end {
+        let index = buffer.contents.len_chars();
+        let mut style = None;
+        for selection in selections.iter() {
+          let (is_selection, is_primary, is_cursor) =
+            Self::properties(index, Some(selection), primary_selection);
+          if is_selection {
+            style = Some(self.style(is_selection, is_primary, is_cursor));
+          }
+        }
+        if let Some((bg, fg)) = style {
+          self.screen.draw(row, col, self.end_of_file_char, bg, fg);
+        }
+      }
+    }
+    // render status bar
+    {
+      let status_left = mode.status();
+      let status_right = {
+        let cursor_location = match primary_selection {
+          Some(primary_selection) => {
+            let cursor = primary_selection.cursor();
+            let row = primary_selection.cursor_line(&buffer.contents);
+            let col = cursor.saturating_sub(buffer.contents.line_to_char(row));
+            format!(" {row}:{col}")
+          }
+          None => "".to_string(),
+        };
+        let buffer_name = match &buffer.filename {
+          Some(filename) => format!(" {filename}"),
+          None => "".to_string(),
+        };
+        format!("{cursor_location}{buffer_name}")
+      };
+      let status_min_size = status_left.len() + status_right.len();
+      let status = if status_min_size < width {
+        let status_gap_size = width - status_min_size;
+        let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
+        format!("{status_left}{status_gap}{status_right}")
+      } else if status_left.len() < width {
+        let status_gap_size = width - status_left.len();
+        let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
+        format!("{status_left}{status_gap}")
+      } else {
+        (0..width).map(|_| " ").collect::<String>()
+      };
+      for (i, ch) in status.chars().enumerate() {
+        self.screen.draw(
+          height.saturating_sub(1),
+          i,
+          ch,
+          self.accent_color,
+          self.ramp_0_color,
+        );
+      }
     }
     self.screen.present();
   }
