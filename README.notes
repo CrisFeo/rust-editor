@@ -5,7 +5,7 @@
     - `c-q` exit editor
     - `c-w` write buffer to file
 
-  # Content editing
+  # Content Modifications
 
     - `d` delete selection
     - `a` insert before active anchor (insert mode)
@@ -13,6 +13,7 @@
     - `Q` paste selection contents from clipboard
     - `z` undo
     - `Z` redo
+    - `r` pipe each selection through the provided command (pipe mode)
 
   # Anchor movements
 
@@ -26,10 +27,10 @@
     - `L` move active anchor right
     - `g` move active active anchor forward to match (seek mode)
     - `G` move active active anchor backward to match (seek mode)
-    - `p` move active anchor down one page
-    - `P` move active anchor up one page
     - `b` swap active and passive anchor
     - `n` collapse selection to active anchor
+    - `p` move active anchor down one page
+    - `P` move active anchor up one page
 
   # Selection manipulation
 
@@ -50,16 +51,3 @@
     - `down`  move view down one line
     - `left`  move view left one line
     - `right` move view right one line
-
-# Tasks
-
-- [DONE] rename search mode to seek mode
-- [DONE] visual feedback for zero-match command
-- [DONE] implement push/pop selections
-- [SKIP] implement match group insert mode
-- [DONE] fix undo buffer
-- [DONE] add toast for file save
-- [DONE] move view to include preview anchor
-- [DONE] implement basic copy/paste
-- [TODO] implement basic macros
-- [TODO] implement multiple buffers

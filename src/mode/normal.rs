@@ -29,7 +29,7 @@ impl Mode for Normal {
     use crate::key::Key::*;
     self.toast = None;
     match key {
-      // Meta
+      // Meta actions
       Char('q') if modifiers.control => return UpdateCommand::Quit,
       Char('w') if modifiers.control => {
         self.toast = if buffer.save() {
@@ -39,7 +39,23 @@ impl Mode for Normal {
         };
       }
 
-      // Anchors
+      // Content modifications
+      Char('d') => {
+        buffer.apply_operations(&[Op::RemoveAll]);
+        buffer.history.commit();
+      }
+      Char('a') => return mode::Insert::switch_to(),
+      Char('q') => registry.set("clipboard", Register::Content(copy(buffer))),
+      Char('Q') => {
+        if let Some(Register::Content(contents)) = registry.get("clipboard") {
+          paste(buffer, contents);
+        }
+      }
+      Char('z') => undo(buffer),
+      Char('Z') => redo(buffer),
+      Char('r') => return Pipe::switch_to(),
+
+      // Anchor movements
       Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
       Char('j') => buffer.apply_operations(&[Op::MoveByLine(1), Op::Collapse]),
       Char('k') => buffer.apply_operations(&[Op::MoveByLine(-1), Op::Collapse]),
@@ -48,12 +64,14 @@ impl Mode for Normal {
       Char('J') => buffer.apply_operations(&[Op::MoveByLine(1)]),
       Char('K') => buffer.apply_operations(&[Op::MoveByLine(-1)]),
       Char('L') => buffer.apply_operations(&[Op::MoveByChar(1)]),
+      Char('g') => return Seek::switch_to(false),
+      Char('G') => return Seek::switch_to(true),
       Char('b') => buffer.apply_operations(&[Op::Swap]),
       Char('n') => buffer.apply_operations(&[Op::Collapse]),
       Char('p') => move_by_window_page(buffer, window, 1),
       Char('P') => move_by_window_page(buffer, window, -1),
 
-      // Selections
+      // Selection manipulation
       Char('u') => buffer.set_selections(vec![Selection::new_at_end(
         0,
         buffer.contents.len_chars(),
@@ -85,27 +103,10 @@ impl Mode for Normal {
       }
       Char('s') => return Split::switch_to(false),
       Char('S') => return Split::switch_to(true),
-      Char('g') => return Seek::switch_to(false),
-      Char('G') => return Seek::switch_to(true),
       Char('f') => return Filter::switch_to(false),
       Char('F') => return Filter::switch_to(true),
 
-      // Modification
-      Char('d') => {
-        buffer.apply_operations(&[Op::RemoveAll]);
-        buffer.history.commit();
-      }
-      Char('a') => return mode::Insert::switch_to(),
-      Char('q') => registry.set("clipboard", Register::Content(copy(buffer))),
-      Char('Q') => {
-        if let Some(Register::Content(contents)) = registry.get("clipboard") {
-          paste(buffer, contents);
-        }
-      }
-      Char('z') => undo(buffer),
-      Char('Z') => redo(buffer),
-      Char('r') => return Pipe::switch_to(),
-      // View
+      // View controls
       Char('v') => center(buffer, window),
       Up => window.scroll_top = window.scroll_top.saturating_sub(1),
       Down => window.scroll_top = window.scroll_top.saturating_add(1),
