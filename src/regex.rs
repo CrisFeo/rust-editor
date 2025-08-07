@@ -30,7 +30,7 @@ impl Regex {
     input.set_range(range_start..=range_end);
     self.0.find_iter(input).map(|m| {
       let start = contents.byte_to_char(m.start());
-      let end = contents.byte_to_char(m.end());
+      let end = contents.byte_to_char(m.end().min(contents.len_chars()));
       let end = end.saturating_sub(1).max(start);
       (start, end)
     })
