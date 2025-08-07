@@ -96,14 +96,14 @@ impl Mode for Normal {
         buffer.history.commit();
       }
       Char('a') => return mode::Insert::switch_to(),
-      Char('q') => registry.set("clipboard", Register::Content(buffer.copy())),
+      Char('q') => registry.set("clipboard", Register::Content(copy(buffer))),
       Char('Q') => {
         if let Some(Register::Content(contents)) = registry.get("clipboard") {
-          buffer.paste(contents);
+          paste(buffer, contents);
         }
       }
-      Char('z') => buffer.undo(),
-      Char('Z') => buffer.redo(),
+      Char('z') => undo(buffer),
+      Char('Z') => redo(buffer),
       Char('r') => return Pipe::switch_to(),
       // View
       Char('v') => center(buffer, window),
@@ -152,4 +152,60 @@ fn wrap_add(domain: usize, value: usize, delta: isize) -> usize {
     value as usize
   };
   value % domain
+}
+
+
+pub fn copy(buffer: &mut Buffer) -> Vec<String> {
+  let mut contents = Vec::with_capacity(buffer.selections.len());
+  for i in 0..buffer.selections.len() {
+    let i = (buffer.primary_selection + i) % buffer.selections.len();
+    let selection = buffer
+      .selections
+      .get(i)
+      .expect("should be able to retrieve selection at index less than length when copying");
+    let content = selection.slice(&buffer.contents);
+    contents.push(content.into());
+  }
+  contents
+}
+
+pub fn paste(buffer: &mut Buffer, contents: &[String]) {
+  for content_i in 0..buffer.selections.len().min(contents.len()) {
+    let selection_i =
+      (buffer.primary_selection + content_i) % buffer.selections.len();
+    let selection = buffer
+      .selections
+      .get_mut(selection_i)
+      .expect("should be able to retrieve selection at index less than length when pasting");
+    let content = contents
+      .get(content_i)
+      .expect("should be able to retrieve content at index less than length when pasting");
+    let change = selection.apply_operation(&mut buffer.contents, Op::InsertStr(content));
+    for j in selection_i + 1..buffer.selections.len() {
+      let next_selection = buffer
+        .selections
+        .get_mut(j)
+        .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation");
+      next_selection.adjust(&buffer.contents, change.as_ref());
+    }
+    change.map(|c| buffer.history.record(c));
+  }
+  buffer.history.commit();
+  buffer.cleanup_overlaps();
+}
+
+pub fn undo(buffer: &mut Buffer) {
+  let Some(changes) = buffer.history.backward() else {
+    return;
+  };
+  let selections = changes.apply(&mut buffer.contents);
+  buffer.set_selections(selections);
+}
+
+pub fn redo(buffer: &mut Buffer) {
+  let Some(changes) = buffer.history.forward() else {
+    return;
+  };
+  let selections = changes.apply(&mut buffer.contents);
+  buffer.set_selections(selections);
 }

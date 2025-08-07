@@ -109,11 +109,11 @@ impl Selection {
       Op::Remove => self.remove(contents),
       Op::RemoveAll => self.remove_all(contents),
     };
-    self.adjust(contents, &change);
+    self.adjust(contents, change.as_ref());
     change
   }
 
-  pub fn adjust(&mut self, contents: &Rope, change: &Option<Change>) {
+  pub fn adjust(&mut self, contents: &Rope, change: Option<&Change>) {
     let max = contents.len_chars();
     match change {
       None => {
@@ -266,6 +266,7 @@ impl Selection {
   }
 }
 
+
 fn step(max: usize, value: usize, delta: isize) -> usize {
   let new_value = {
     if delta > 0 {
@@ -279,4 +280,31 @@ fn step(max: usize, value: usize, delta: isize) -> usize {
   } else {
     new_value
   }
+}
+
+pub fn merge_overlapping_selections(selections: &mut Vec<Selection>) {
+  selections.sort_by(|a, b| {
+    a.start()
+      .partial_cmp(&b.start())
+      .expect("selection bounds should be comparable")
+  });
+  *selections = {
+    let mut selections_iter = selections.drain(..);
+    let mut selections = vec![];
+    let mut current = selections_iter.next();
+    while let Some(current_value) = current {
+      let mut next = selections_iter.next();
+      if let Some(next_value) = next {
+        if let Some(merged_value) = current_value.try_merge(&next_value) {
+          next = Some(merged_value);
+        } else {
+          selections.push(current_value);
+        }
+      } else {
+        selections.push(current_value);
+      }
+      current = next;
+    }
+    selections
+  };
 }

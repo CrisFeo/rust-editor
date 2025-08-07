@@ -38,52 +38,15 @@ impl Mode for Pipe {
         self.command.insert_char(len, ch);
       }
       Enter => {
-        let script = self.command.to_string();
-        let mut command = Command::new("sh");
-        command.arg("-c");
-        command.arg(script);
-        command.stdin(Stdio::piped());
-        command.stdout(Stdio::piped());
-        command.stderr(Stdio::piped());
-        let mut error = None;
-        let mut results = Vec::with_capacity(buffer.selections.len());
-        for selection in buffer.selections.iter() {
-          let mut child = match command.spawn() {
-            Ok(child) => child,
-            Err(e) => {
-              let msg = format!("failed to spawn child process: {e:?}");
-              error = Some(msg);
-              break;
-            }
-          };
-          let mut stdin = match child.stdin.take() {
-            Some(stdin) => stdin,
-            None => {
-              error = Some("failed to open child process stdin".into());
-              break;
-            }
-          };
-          let input = selection.slice(&buffer.contents);
-          let input = input.bytes().collect::<Vec<u8>>();
-          if let Err(e) = stdin.write_all(&input) {
-            let msg = format!("failed to write to child process stdin: {e:?}");
-            error = Some(msg);
-            break;
-          }
-          drop(stdin);
-          let output = match child.wait_with_output() {
-            Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
-            Err(e) => {
-              let msg = format!("failed to read child process stdout: {e:?}");
-              error = Some(msg);
-              break;
-            }
-          };
-          results.push((*selection, output));
-        }
-        if let Some(error) = error {
-          return Normal::switch_to_with_toast(error);
-        }
+        let results = pipe_selections_thru_script(
+          &self.command,
+          &buffer.contents,
+          &buffer.selections,
+        );
+        let mut results = match results {
+          Ok(results) => results,
+          Err(error) => return Normal::switch_to_with_toast(error),
+        };
         let mut selections = Vec::with_capacity(results.len());
         for i in 0..results.len() {
           let (selection, output) = results
@@ -96,8 +59,8 @@ impl Mode for Pipe {
             let (next_selection, _) = results
               .get_mut(j)
               .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation during pipe");
-            next_selection.adjust(&buffer.contents, &change_a);
-            next_selection.adjust(&buffer.contents, &change_b);
+            next_selection.adjust(&buffer.contents, change_a.as_ref());
+            next_selection.adjust(&buffer.contents, change_b.as_ref());
           }
           change_a.map(|c| buffer.history.record(c));
           change_b.map(|c| buffer.history.record(c));
@@ -118,4 +81,40 @@ impl Mode for Pipe {
   fn preview_selections(&self) -> Option<&Vec<Selection>> {
     None
   }
+}
+
+fn pipe_selections_thru_script(
+  script: &Rope,
+  contents: &Rope,
+  selections: &[Selection],
+) -> Result<Vec<(Selection, String)>, String> {
+  let mut command = Command::new("sh");
+  command.arg("-c");
+  command.arg(script.to_string());
+  command.stdin(Stdio::piped());
+  command.stdout(Stdio::piped());
+  command.stderr(Stdio::piped());
+  let mut results = Vec::with_capacity(selections.len());
+  for selection in selections.iter() {
+    let mut child = match command.spawn() {
+      Ok(child) => child,
+      Err(e) => return Err(format!("failed to spawn child process: {e:?}")),
+    };
+    let mut stdin = match child.stdin.take() {
+      Some(stdin) => stdin,
+      None => return Err("failed to open child process stdin".into()),
+    };
+    let input = selection.slice(contents);
+    let input = input.bytes().collect::<Vec<u8>>();
+    if let Err(e) = stdin.write_all(&input) {
+      return Err(format!("failed to write to child process stdin: {e:?}"));
+    }
+    drop(stdin);
+    let output = match child.wait_with_output() {
+      Ok(output) => String::from_utf8_lossy(&output.stdout).to_string(),
+      Err(e) => return Err(format!("failed to read child process stdout: {e:?}")),
+    };
+    results.push((*selection, output));
+  }
+  Ok(results)
 }

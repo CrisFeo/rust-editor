@@ -15,17 +15,18 @@ impl Change {
     }
   }
 
-  pub fn apply(&self, contents: &mut Rope) {
+  pub fn apply(&self, contents: &mut Rope) -> Selection {
     match self {
-      // TODO there might be a better way to insert this change into the target rope
-      Change::Addition(i, c) => contents.insert(*i, &c.to_string()),
-      Change::Removal(i, c) => contents.remove(*i..i+c.len_chars()),
+      Change::Addition(begin, content) => {
+        // TODO there might be a better way to insert this change into the target rope
+        contents.insert(*begin, &content.to_string());
+        Selection::new_at_end(*begin, begin + content.len_chars().saturating_sub(1))
+      },
+      Change::Removal(begin, content) => {
+        contents.remove(*begin..begin+content.len_chars());
+        Selection::new_at_end(*begin, *begin)
+      },
     }
-  }
-
-  pub fn selections(&self) -> Vec<Selection> {
-    // TODO
-    Vec::new()
   }
 }
 
@@ -41,10 +42,17 @@ impl Changes {
     Self(changes)
   }
 
-  pub fn apply(&self, contents: &mut Rope) {
+  pub fn apply(&self, contents: &mut Rope) -> Vec<Selection> {
+    let mut selections: Vec<Selection> = Vec::new();
     for change in self.0.iter() {
-      change.apply(contents);
+      let selection = change.apply(contents);
+      for selection in selections.iter_mut() {
+        selection.adjust(contents, Some(change));
+      }
+      selections.push(selection);
+      merge_overlapping_selections(&mut selections);
     }
+    selections
   }
 
   pub fn push(&mut self, change: Change) -> &Change {
