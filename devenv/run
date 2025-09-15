@@ -25,10 +25,10 @@ elif [ "$STATUS" = 'exited' ]; then
     $CONTAINER_NAME
 else
   echo "$CONTAINER_NAME not found, creating container..."
-  docker build .               \
-    --build-arg USER="$USER"   \
-    --build-arg USER_UID="$(id -u)" \
-    --build-arg USER_GID="$(id -g)" \
+  docker build ./devenv                                         \
+    --build-arg USER="$USER"                                    \
+    --build-arg USER_UID="$(id -u)"                             \
+    --build-arg USER_GID="$(id -g)"                             \
     --build-arg DOCKER_GID="$(stat -c %g /var/run/docker.sock)" \
     --tag "$CONTAINER_NAME:latest"
   LOCAL_WORKSPACE_FOLDER="${LOCAL_WORKSPACE_FOLDER:-$(pwd)}"

@@ -26,7 +26,7 @@ impl Mode for Insert {
         return Normal::switch_to();
       },
       Backspace => buffer.apply_operations(&[Op::Remove]),
-      Tab => buffer.apply_operations(&[Op::InsertChar(' '), Op::InsertChar(' ')]),
+      Tab => buffer.apply_operations(&[Op::InsertStr("  ")]),
       Enter => buffer.apply_operations(&[Op::InsertChar('\n')]),
       Char(ch) => buffer.apply_operations(&[Op::InsertChar(ch)]),
       _ => {}

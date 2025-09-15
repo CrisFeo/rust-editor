@@ -5,5 +5,3 @@ export ADDITIONAL_DOCKER_ARGS=" \
   --mount type=bind,source=$HOME/.config/kak,target=$HOME/.config/kak,ro \
   --publish 8000:8000 \
 "
-export CARGO_ARGS=""
-

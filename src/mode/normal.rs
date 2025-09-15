@@ -56,14 +56,10 @@ impl Mode for Normal {
       Char('r') => return Pipe::switch_to(),
 
       // Anchor movements
-      Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
-      Char('j') => buffer.apply_operations(&[Op::MoveByLine(1), Op::Collapse]),
-      Char('k') => buffer.apply_operations(&[Op::MoveByLine(-1), Op::Collapse]),
-      Char('l') => buffer.apply_operations(&[Op::MoveByChar(1), Op::Collapse]),
-      Char('H') => buffer.apply_operations(&[Op::MoveByChar(-1)]),
-      Char('J') => buffer.apply_operations(&[Op::MoveByLine(1)]),
-      Char('K') => buffer.apply_operations(&[Op::MoveByLine(-1)]),
-      Char('L') => buffer.apply_operations(&[Op::MoveByChar(1)]),
+      Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1)]),
+      Char('j') => buffer.apply_operations(&[Op::MoveByLine(1)]),
+      Char('k') => buffer.apply_operations(&[Op::MoveByLine(-1)]),
+      Char('l') => buffer.apply_operations(&[Op::MoveByChar(1)]),
       Char('g') => return Seek::switch_to(false),
       Char('G') => return Seek::switch_to(true),
       Char('b') => buffer.apply_operations(&[Op::Swap]),

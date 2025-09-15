@@ -17,14 +17,10 @@
 
   # Anchor movements
 
-    - `h` move active anchor left and collapse selection
-    - `j` move active anchor down and collapse selection
-    - `k` move active anchor up and collapse selection
-    - `l` move active anchor right and collapse selection
-    - `H` move active anchor left
-    - `J` move active anchor down
-    - `K` move active anchor up
-    - `L` move active anchor right
+    - `h` move active anchor left
+    - `j` move active anchor down
+    - `k` move active anchor up
+    - `l` move active anchor right
     - `g` move active active anchor forward to match (seek mode)
     - `G` move active active anchor backward to match (seek mode)
     - `b` swap active and passive anchor
