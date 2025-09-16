@@ -1,6 +1,6 @@
 #!/bin/sh
 set -euf
-source "$(dirname "$0")/config"
+. "$(dirname "$0")/config"
 
 CONTAINER_NAME="$PROJECT_NAME-devenv"
 

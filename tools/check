@@ -1,6 +1,6 @@
 #!/bin/sh
 set -euf
-source "$(dirname "$0")/config"
+. "$(dirname "$0")/config"
 
 cargo clippy $CARGO_ARGS --quiet --color always
 
