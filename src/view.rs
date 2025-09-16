@@ -1,28 +1,24 @@
 use crate::*;
 
+pub struct Theme {
+  pub accent_color: Color,
+  pub ramp_0_color: Color,
+  pub ramp_1_color: Color,
+  pub ramp_2_color: Color,
+}
+
 pub struct View {
   screen: Screen,
-  accent_color: Color,
-  ramp_0_color: Color,
-  ramp_1_color: Color,
-  ramp_2_color: Color,
+  theme: Theme,
   new_line_char: char,
   end_of_file_char: char,
 }
 
 impl View {
-  pub fn create(
-    accent_color: Color,
-    ramp_0_color: Color,
-    ramp_1_color: Color,
-    ramp_2_color: Color,
-  ) -> Self {
+  pub fn create(theme: Theme) -> Self {
     Self {
-      screen: Screen::create(ramp_0_color, ramp_2_color),
-      accent_color,
-      ramp_0_color,
-      ramp_1_color,
-      ramp_2_color,
+      screen: Screen::create(theme.ramp_0_color, theme.ramp_2_color),
+      theme,
       new_line_char: '¬',
       end_of_file_char: 'Ω',
     }
@@ -149,8 +145,8 @@ impl View {
           height.saturating_sub(1),
           i,
           ch,
-          self.accent_color,
-          self.ramp_0_color,
+          self.theme.accent_color,
+          self.theme.ramp_0_color,
         );
       }
     }
@@ -180,22 +176,22 @@ impl View {
   }
 
   fn style(&self, is_selection: bool, is_primary: bool, is_cursor: bool) -> (Color, Color) {
-    let mut bg = self.ramp_0_color;
-    let mut fg = self.ramp_2_color;
+    let mut bg = self.theme.ramp_0_color;
+    let mut fg = self.theme.ramp_2_color;
     if is_selection {
       if is_primary {
         if is_cursor {
-          bg = self.accent_color;
+          bg = self.theme.accent_color;
         } else {
-          bg = self.ramp_2_color;
+          bg = self.theme.ramp_2_color;
         };
-        fg = self.ramp_0_color;
+        fg = self.theme.ramp_0_color;
       } else if is_cursor {
-        bg = self.ramp_2_color;
-        fg = self.ramp_0_color;
+        bg = self.theme.ramp_2_color;
+        fg = self.theme.ramp_0_color;
       } else {
-        bg = self.ramp_1_color;
-        fg = self.ramp_2_color;
+        bg = self.theme.ramp_1_color;
+        fg = self.theme.ramp_2_color;
       }
     }
     (bg, fg)

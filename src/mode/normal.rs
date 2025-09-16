@@ -72,22 +72,22 @@ impl Mode for Normal {
         0,
         buffer.contents.len_chars(),
       )]),
-      Char('y') => {
+      Char('t') => {
         buffer.primary_selection = wrap_add(
           buffer.selections.len(),
           buffer.primary_selection,
           1,
         )
       }
-      Char('Y') => {
+      Char('T') => {
         buffer.primary_selection = wrap_add(
           buffer.selections.len(),
           buffer.primary_selection,
           -1,
         );
       }
-      Char('t') => buffer.set_selections(vec![*buffer.primary_selection()]),
-      Char('T') => {
+      Char('y') => buffer.set_selections(vec![*buffer.primary_selection()]),
+      Char('Y') => {
         let selections = buffer
           .selections
           .iter()

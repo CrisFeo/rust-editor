@@ -2,6 +2,20 @@ use rust_editor::*;
 use std::panic::{catch_unwind, resume_unwind};
 use std::process::exit;
 
+const DEFAULT_THEME: Theme = Theme {
+  accent_color: Color(95,  135, 0  ),
+  ramp_0_color: Color(0,   0,   0  ),
+  ramp_1_color: Color(78,  78,  78 ),
+  ramp_2_color: Color(188, 188, 188),
+};
+
+const E_INK_THEME: Theme = Theme {
+  accent_color: Color(120, 120, 120),
+  ramp_0_color: Color(255, 255, 255),
+  ramp_1_color: Color(188, 188, 188),
+  ramp_2_color: Color(0,   0,   0  ),
+};
+
 fn main() {
   let filename = std::env::args().nth(1);
   let result = catch_unwind(|| {
@@ -18,18 +32,7 @@ fn main() {
     };
     let mut registry = Registry::default();
     let mut mode: Box<dyn Mode> = Box::new(Normal::default());
-    let mut view = View::create(
-      // normal terminal
-      //Color(95,  135, 0  ), // accent
-      //Color(0,   0,   0  ), // ramp 0
-      //Color(78,  78,  78 ), // ramp 1
-      //Color(188, 188, 188), // ramp 2
-      // e-ink terminal
-      Color(120, 120, 120),
-      Color(255, 255, 255),
-      Color(188, 188, 188),
-      Color(0, 0, 0),
-    );
+    let mut view = View::create(E_INK_THEME);
     let mut window = Window::default();
     loop {
       view.render(mode.as_ref(), &buffer, &window);

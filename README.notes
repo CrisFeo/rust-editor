@@ -31,10 +31,10 @@
   # Selection manipulation
 
     - `u` select entire buffer
-    - `y` make next selection primary
-    - `Y` make previous selection primary
-    - `t` drop primary selection
-    - `T` drop all selections besides primary
+    - `t` make next selection primary
+    - `T` make previous selection primary
+    - `y` drop primary selection
+    - `Y` drop all selections besides primary
     - `s` split selection into matches (split mode)
     - `S` split selection around matches (split mode)
     - `f` filter for selections (filter mode)
