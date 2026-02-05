@@ -8,6 +8,7 @@ mod regex;
 mod register;
 mod screen;
 mod selection;
+mod terminal;
 mod view;
 mod window;
 
@@ -21,6 +22,7 @@ pub use regex::*;
 pub use register::*;
 pub use screen::*;
 pub use selection::*;
+pub use terminal::*;
 pub use view::*;
 pub use window::*;
 

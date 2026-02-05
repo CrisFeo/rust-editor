@@ -2,9 +2,11 @@
 name = "rust-editor"
 version = "0.1.0"
 edition = "2021"
+default-run = "rust-editor"
 
 [dependencies]
 gag = "1.0"
 ropey = "1.3"
 crossterm = "0.29"
 regex-cursor = "0.1.4"
+libc = "0.2.180"
