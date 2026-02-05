@@ -32,7 +32,7 @@ fn main() {
     };
     let mut registry = Registry::default();
     let mut mode: Box<dyn Mode> = Box::new(Normal::default());
-    let mut view = View::create(E_INK_THEME);
+    let mut view = View::create(DEFAULT_THEME);
     let mut window = Window::default();
     loop {
       view.render(mode.as_ref(), &buffer, &window);
