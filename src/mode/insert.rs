@@ -15,12 +15,11 @@ impl Mode for Insert {
     buffer: &mut Buffer,
     _registry: &mut Registry,
     _window: &mut Window,
-    modifiers: Modifiers,
+    _modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;
     match key {
-      Char('q') if modifiers.control => return Normal::switch_to(),
       Esc => {
         buffer.history.commit();
         return Normal::switch_to();

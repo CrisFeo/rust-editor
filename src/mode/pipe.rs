@@ -20,12 +20,11 @@ impl Mode for Pipe {
     buffer: &mut Buffer,
     _registry: &mut Registry,
     _window: &mut Window,
-    modifiers: Modifiers,
+    _modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;
     match key {
-      Char('q') if modifiers.control => return Normal::switch_to(),
       Esc => return Normal::switch_to(),
       Backspace => {
         let len = self.command.len_chars();

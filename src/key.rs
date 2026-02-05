@@ -5,22 +5,13 @@ pub struct Modifiers {
 }
 
 pub enum Key {
-  Backspace,
+  Char(char),
+  Tab,
+  Esc,
   Enter,
-  Left,
-  Right,
+  Backspace,
   Up,
   Down,
-  Home,
-  End,
-  PageUp,
-  PageDown,
-  Tab,
-  BackTab,
-  Delete,
-  Insert,
-  F(u8),
-  Char(char),
-  Null,
-  Esc,
+  Left,
+  Right,
 }

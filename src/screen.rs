@@ -107,17 +107,8 @@ impl Screen {
             KeyCode::Right => return (modifiers, Key::Right),
             KeyCode::Up => return (modifiers, Key::Up),
             KeyCode::Down => return (modifiers, Key::Down),
-            KeyCode::Home => return (modifiers, Key::Home),
-            KeyCode::End => return (modifiers, Key::End),
-            KeyCode::PageUp => return (modifiers, Key::PageUp),
-            KeyCode::PageDown => return (modifiers, Key::PageDown),
             KeyCode::Tab => return (modifiers, Key::Tab),
-            KeyCode::BackTab => return (modifiers, Key::BackTab),
-            KeyCode::Delete => return (modifiers, Key::Delete),
-            KeyCode::Insert => return (modifiers, Key::Insert),
-            KeyCode::F(n) => return (modifiers, Key::F(n)),
             KeyCode::Char(c) => return (modifiers, Key::Char(c)),
-            KeyCode::Null => return (modifiers, Key::Null),
             KeyCode::Esc => return (modifiers, Key::Esc),
             _ => {}
           }

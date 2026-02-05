@@ -30,8 +30,8 @@ impl Mode for Normal {
     self.toast = None;
     match key {
       // Meta actions
-      Char('q') if modifiers.control => return UpdateCommand::Quit,
-      Char('w') if modifiers.control => {
+      Char('Q') => return UpdateCommand::Quit,
+      Char('W') => {
         self.toast = if buffer.save() {
           Some("file saved!".into())
         } else {
@@ -45,8 +45,8 @@ impl Mode for Normal {
         buffer.history.commit();
       }
       Char('a') => return mode::Insert::switch_to(),
-      Char('q') => registry.set("clipboard", Register::Content(copy(buffer))),
-      Char('Q') => {
+      Char('x') => registry.set("clipboard", Register::Content(copy(buffer))),
+      Char('X') => {
         if let Some(Register::Content(contents)) = registry.get("clipboard") {
           paste(buffer, contents);
         }

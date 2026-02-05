@@ -2,15 +2,15 @@
 
 ## Meta actions
 
-- `c-q` exit editor
-- `c-w` write buffer to file
+- `Q` exit editor
+- `W` write buffer to file
 
 ## Content Modifications
 
 - `d` delete selection
 - `a` insert before active anchor (insert mode)
-- `q` copy selection contents to clipboard
-- `Q` paste selection contents from clipboard
+- `x` copy selection contents to clipboard
+- `X` paste selection contents from clipboard
 - `z` undo
 - `Z` redo
 - `r` pipe each selection through the provided command (pipe mode)
