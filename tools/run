@@ -2,4 +2,4 @@
 set -euf
 . "$(dirname "$0")/config"
 
-RUST_BACKTRACE=1 cargo run --color always "$@" 2> logs.txt
+RUST_BACKTRACE=1 cargo run $CARGO_ARGS "$@" 2> logs.txt

@@ -90,10 +90,7 @@ impl View {
           self.screen.draw(row, col, ch, bg, fg);
         }
       }
-      let buffer_end = window.to_scroll_position(
-        &buffer.contents,
-        buffer.contents.len_chars(),
-      );
+      let buffer_end = window.to_scroll_position(&buffer.contents, buffer.contents.len_chars());
       if let Some((row, col)) = buffer_end {
         let index = buffer.contents.len_chars();
         let mut style = None;

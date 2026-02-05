@@ -266,7 +266,6 @@ impl Selection {
   }
 }
 
-
 fn step(max: usize, value: usize, delta: isize) -> usize {
   let new_value = {
     if delta > 0 {

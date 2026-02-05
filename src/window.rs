@@ -2,6 +2,7 @@ use ropey::Rope;
 
 #[derive(Default)]
 pub struct Window {
+  pub keep_cursor_visible: bool,
   pub scroll_top: usize,
   pub scroll_left: usize,
   pub width: usize,
@@ -32,6 +33,9 @@ impl Window {
   pub fn to_index(&self, contents: &Rope, row: usize, col: usize) -> usize {
     let row = self.scroll_top + row;
     let col = self.scroll_left + col;
+    if row >= contents.len_lines() {
+      return contents.len_chars();
+    }
     contents.line_to_char(row) + col
   }
 

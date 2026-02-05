@@ -65,7 +65,11 @@ mod tests {
     test_seek(&mut c, h.backward().unwrap(), "hello there");
     test_seek(&mut c, h.backward().unwrap(), "hello ");
     test_record(&mut c, h.record(add(6, "friends")), "hello friends");
-    test_record(&mut c, h.record(add(13, " and countrymen")), "hello friends and countrymen");
+    test_record(
+      &mut c,
+      h.record(add(13, " and countrymen")),
+      "hello friends and countrymen",
+    );
     h.commit();
     test_seek(&mut c, h.backward().unwrap(), "hello ");
     test_seek(&mut c, h.forward().unwrap(), "hello friends and countrymen");

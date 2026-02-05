@@ -3,9 +3,9 @@ use std::panic::{catch_unwind, resume_unwind};
 use std::process::exit;
 
 const DEFAULT_THEME: Theme = Theme {
-  accent_color: Color(95,  135, 0  ),
-  ramp_0_color: Color(0,   0,   0  ),
-  ramp_1_color: Color(78,  78,  78 ),
+  accent_color: Color(95, 135, 0),
+  ramp_0_color: Color(0, 0, 0),
+  ramp_1_color: Color(78, 78, 78),
   ramp_2_color: Color(188, 188, 188),
 };
 
@@ -13,7 +13,7 @@ const E_INK_THEME: Theme = Theme {
   accent_color: Color(120, 120, 120),
   ramp_0_color: Color(255, 255, 255),
   ramp_1_color: Color(188, 188, 188),
-  ramp_2_color: Color(0,   0,   0  ),
+  ramp_2_color: Color(0, 0, 0),
 };
 
 fn main() {
@@ -44,12 +44,15 @@ fn main() {
         UpdateCommand::Quit => break,
       }
       window.set_size(view.buffer_size());
-      let target_cursor = mode
-        .preview_selections()
-        .and_then(|ps| ps.first())
-        .unwrap_or(buffer.primary_selection())
-        .cursor();
-      window.scroll_into_view(&buffer.contents, target_cursor);
+      if window.keep_cursor_visible {
+        let target_cursor = mode
+          .preview_selections()
+          .and_then(|ps| ps.first())
+          .unwrap_or(buffer.primary_selection())
+          .cursor();
+        window.scroll_into_view(&buffer.contents, target_cursor);
+      }
+      window.keep_cursor_visible = true;
     }
   });
   if let Err(e) = result {

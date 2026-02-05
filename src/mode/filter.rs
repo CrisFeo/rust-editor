@@ -54,16 +54,8 @@ impl Mode for Filter {
       Enter => {
         let command = self.command.to_string();
         let result = match self.reject {
-          true => reject(
-            &buffer.contents,
-            &buffer.selections,
-            &command,
-          ),
-          false => accept(
-            &buffer.contents,
-            &buffer.selections,
-            &command,
-          ),
+          true => reject(&buffer.contents, &buffer.selections, &command),
+          false => accept(&buffer.contents, &buffer.selections, &command),
         };
         if let ModeResult::Ok(selections) = result {
           buffer.primary_selection = selections.len().saturating_sub(1);
@@ -76,7 +68,7 @@ impl Mode for Filter {
     UpdateCommand::None
   }
 
-  fn status(&self) -> CowStr {
+  fn status(&self) -> CowStr<'_> {
     let match_indicator = match &self.preview {
       ModeResult::Error => "[!]",
       ModeResult::Empty => "[_]",
@@ -99,16 +91,8 @@ impl Mode for Filter {
 fn update_preview(mode: &mut Filter, buffer: &Buffer) {
   let command = mode.command.to_string();
   let result = match mode.reject {
-    true => reject(
-      &buffer.contents,
-      &buffer.selections,
-      &command,
-    ),
-    false => accept(
-      &buffer.contents,
-      &buffer.selections,
-      &command,
-    ),
+    true => reject(&buffer.contents, &buffer.selections, &command),
+    false => accept(&buffer.contents, &buffer.selections, &command),
   };
   mode.preview = result;
 }

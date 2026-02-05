@@ -1,49 +1,70 @@
 # Normal mode controls
 
-  # Meta actions
+## Meta actions
 
-    - `c-q` exit editor
-    - `c-w` write buffer to file
+- `c-q` exit editor
+- `c-w` write buffer to file
 
-  # Content Modifications
+## Content Modifications
 
-    - `d` delete selection
-    - `a` insert before active anchor (insert mode)
-    - `q` copy selection contents to clipboard
-    - `Q` paste selection contents from clipboard
-    - `z` undo
-    - `Z` redo
-    - `r` pipe each selection through the provided command (pipe mode)
+- `d` delete selection
+- `a` insert before active anchor (insert mode)
+- `q` copy selection contents to clipboard
+- `Q` paste selection contents from clipboard
+- `z` undo
+- `Z` redo
+- `r` pipe each selection through the provided command (pipe mode)
 
-  # Anchor movements
+## Anchor movements
 
-    - `h` move active anchor left
-    - `j` move active anchor down
-    - `k` move active anchor up
-    - `l` move active anchor right
-    - `g` move active active anchor forward to match (seek mode)
-    - `G` move active active anchor backward to match (seek mode)
-    - `b` swap active and passive anchor
-    - `n` collapse selection to active anchor
-    - `p` move active anchor down one page
-    - `P` move active anchor up one page
+- `h` move active anchor left
+- `j` move active anchor down
+- `k` move active anchor up
+- `l` move active anchor right
+- `g` move active active anchor forward to match (seek mode)
+- `G` move active active anchor backward to match (seek mode)
+- `b` swap active and passive anchor
+- `n` collapse selection to active anchor
+- `p` move active anchor down one page
+- `P` move active anchor up one page
 
-  # Selection manipulation
+## Selection manipulation
 
-    - `u` select entire buffer
-    - `t` make next selection primary
-    - `T` make previous selection primary
-    - `y` drop primary selection
-    - `Y` drop all selections besides primary
-    - `s` split selection into matches (split mode)
-    - `S` split selection around matches (split mode)
-    - `f` filter for selections (filter mode)
-    - `F` filter out selections (filter mode)
+- `u` select entire buffer
+- `t` make next selection primary
+- `T` make previous selection primary
+- `y` drop primary selection
+- `Y` drop all selections besides primary
+- `s` split selection into matches (split mode)
+- `S` split selection around matches (split mode)
+- `f` filter for selections (filter mode)
+- `F` filter out selections (filter mode)
 
-  # View controls
+## View controls
 
-    - `v`     center view on primary selection
-    - `up`    move view up one line
-    - `down`  move view down one line
-    - `left`  move view left one line
-    - `right` move view right one line
+- `v`     center view on primary selection
+- `up`    move view up one line
+- `down`  move view down one line
+- `left`  move view left one line
+- `right` move view right one line
+
+# tasks
+- [x] scroll wheel support
+- [ ] push cursor on scroll
+- [ ] improve status path rendering
+  - elide path middle
+  - trim path cwd
+  - trim path home
+- [ ] bug: scroll down to trailing newline
+- [ ] semantic colorscheme
+  - eink colorscheme pass
+- [ ] macros
+  - text representation of keys
+  - "history" buffer to copy from
+  - early exit on errors?
+- [ ] bug: status foreground flicker
+- [ ] fast repeat last command on enter
+- [ ] move to raw terminal sequences
+- [ ] multibuffer
+- [ ] vimgrep file:line:col support
+- [ ] ctrl-z support

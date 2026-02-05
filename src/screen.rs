@@ -1,5 +1,7 @@
 use crate::*;
-use crossterm::event::{read, Event, KeyCode, KeyModifiers};
+use crossterm::event::{
+  read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
+};
 use crossterm::style::{Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::ClearType;
 use crossterm::{cursor, execute, queue, terminal};
@@ -45,6 +47,7 @@ impl Screen {
       .expect("should set background color when setting up");
     queue!(output, SetForegroundColor(fg.into()))
       .expect("should set foreground color when setting up");
+    queue!(output, EnableMouseCapture).expect("should enable mouse when setting up");
     output
       .flush()
       .expect("should flush queued output when setting up");
@@ -77,33 +80,47 @@ impl Screen {
   pub fn poll(&mut self) -> (Modifiers, Key) {
     loop {
       match read().expect("should read input") {
+        Event::Mouse(event) => {
+          let modifiers = Modifiers {
+            control: event.modifiers.contains(KeyModifiers::CONTROL),
+            shift: event.modifiers.contains(KeyModifiers::SHIFT),
+            alt: event.modifiers.contains(KeyModifiers::ALT),
+          };
+          match event.kind {
+            MouseEventKind::ScrollUp => return (modifiers, Key::Up),
+            MouseEventKind::ScrollDown => return (modifiers, Key::Down),
+            MouseEventKind::ScrollLeft => return (modifiers, Key::Left),
+            MouseEventKind::ScrollRight => return (modifiers, Key::Right),
+            _ => {}
+          }
+        }
         Event::Key(event) => {
           let modifiers = Modifiers {
             control: event.modifiers.contains(KeyModifiers::CONTROL),
             shift: event.modifiers.contains(KeyModifiers::SHIFT),
             alt: event.modifiers.contains(KeyModifiers::ALT),
           };
-          let key = match event.code {
-            KeyCode::Backspace => Key::Backspace,
-            KeyCode::Enter => Key::Enter,
-            KeyCode::Left => Key::Left,
-            KeyCode::Right => Key::Right,
-            KeyCode::Up => Key::Up,
-            KeyCode::Down => Key::Down,
-            KeyCode::Home => Key::Home,
-            KeyCode::End => Key::End,
-            KeyCode::PageUp => Key::PageUp,
-            KeyCode::PageDown => Key::PageDown,
-            KeyCode::Tab => Key::Tab,
-            KeyCode::BackTab => Key::BackTab,
-            KeyCode::Delete => Key::Delete,
-            KeyCode::Insert => Key::Insert,
-            KeyCode::F(n) => Key::F(n),
-            KeyCode::Char(c) => Key::Char(c),
-            KeyCode::Null => Key::Null,
-            KeyCode::Esc => Key::Esc,
-          };
-          return (modifiers, key);
+          match event.code {
+            KeyCode::Backspace => return (modifiers, Key::Backspace),
+            KeyCode::Enter => return (modifiers, Key::Enter),
+            KeyCode::Left => return (modifiers, Key::Left),
+            KeyCode::Right => return (modifiers, Key::Right),
+            KeyCode::Up => return (modifiers, Key::Up),
+            KeyCode::Down => return (modifiers, Key::Down),
+            KeyCode::Home => return (modifiers, Key::Home),
+            KeyCode::End => return (modifiers, Key::End),
+            KeyCode::PageUp => return (modifiers, Key::PageUp),
+            KeyCode::PageDown => return (modifiers, Key::PageDown),
+            KeyCode::Tab => return (modifiers, Key::Tab),
+            KeyCode::BackTab => return (modifiers, Key::BackTab),
+            KeyCode::Delete => return (modifiers, Key::Delete),
+            KeyCode::Insert => return (modifiers, Key::Insert),
+            KeyCode::F(n) => return (modifiers, Key::F(n)),
+            KeyCode::Char(c) => return (modifiers, Key::Char(c)),
+            KeyCode::Null => return (modifiers, Key::Null),
+            KeyCode::Esc => return (modifiers, Key::Esc),
+            _ => {}
+          }
         }
         Event::Resize(width, height) => {
           self.width = width as usize;
@@ -188,6 +205,7 @@ impl Screen {
 
 impl Drop for Screen {
   fn drop(&mut self) {
+    execute!(self.output, DisableMouseCapture).expect("should disable mouse");
     execute!(self.output, cursor::Show).expect("should show cursor");
     terminal::disable_raw_mode().expect("should disable raw mode");
     execute!(self.output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");

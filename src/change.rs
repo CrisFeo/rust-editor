@@ -21,11 +21,11 @@ impl Change {
         // TODO there might be a better way to insert this change into the target rope
         contents.insert(*begin, &content.to_string());
         Selection::new_at_end(*begin, begin + content.len_chars().saturating_sub(1))
-      },
+      }
       Change::Removal(begin, content) => {
-        contents.remove(*begin..begin+content.len_chars());
+        contents.remove(*begin..begin + content.len_chars());
         Selection::new_at_end(*begin, *begin)
-      },
+      }
     }
   }
 }
@@ -57,6 +57,9 @@ impl Changes {
 
   pub fn push(&mut self, change: Change) -> &Change {
     self.0.push(change);
-    self.0.last().expect("should be able to retrieve last change after push")
+    self
+      .0
+      .last()
+      .expect("should be able to retrieve last change after push")
   }
 }

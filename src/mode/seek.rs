@@ -55,16 +55,8 @@ impl Mode for Seek {
       Enter => {
         let command = self.command.to_string();
         let result = match self.reverse {
-          true => reverse(
-            &buffer.contents,
-            &buffer.selections,
-            &command,
-          ),
-          false => forward(
-            &buffer.contents,
-            &buffer.selections,
-            &command,
-          ),
+          true => reverse(&buffer.contents, &buffer.selections, &command),
+          false => forward(&buffer.contents, &buffer.selections, &command),
         };
         if let ModeResult::Ok(selections) = result {
           buffer.primary_selection = selections.len().saturating_sub(1);
@@ -77,7 +69,7 @@ impl Mode for Seek {
     UpdateCommand::None
   }
 
-  fn status(&self) -> CowStr {
+  fn status(&self) -> CowStr<'_> {
     let match_indicator = match &self.preview {
       ModeResult::Error => "[!]",
       ModeResult::Empty => "[_]",
@@ -100,16 +92,8 @@ impl Mode for Seek {
 fn update_preview(mode: &mut Seek, buffer: &Buffer) {
   let command = mode.command.to_string();
   let result = match mode.reverse {
-    true => reverse(
-      &buffer.contents,
-      &buffer.selections,
-      &command,
-    ),
-    false => forward(
-      &buffer.contents,
-      &buffer.selections,
-      &command,
-    ),
+    true => reverse(&buffer.contents, &buffer.selections, &command),
+    false => forward(&buffer.contents, &buffer.selections, &command),
   };
   mode.preview = result;
 }

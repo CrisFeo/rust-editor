@@ -2,4 +2,4 @@
 set -euf
 . "$(dirname "$0")/config"
 
-cargo test $CARGO_ARGS --color always
+cargo test $CARGO_ARGS

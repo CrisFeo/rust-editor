@@ -68,23 +68,14 @@ impl Mode for Normal {
       Char('P') => move_by_window_page(buffer, window, -1),
 
       // Selection manipulation
-      Char('u') => buffer.set_selections(vec![Selection::new_at_end(
-        0,
-        buffer.contents.len_chars(),
-      )]),
+      Char('u') => {
+        buffer.set_selections(vec![Selection::new_at_end(0, buffer.contents.len_chars())])
+      }
       Char('t') => {
-        buffer.primary_selection = wrap_add(
-          buffer.selections.len(),
-          buffer.primary_selection,
-          1,
-        )
+        buffer.primary_selection = wrap_add(buffer.selections.len(), buffer.primary_selection, 1)
       }
       Char('T') => {
-        buffer.primary_selection = wrap_add(
-          buffer.selections.len(),
-          buffer.primary_selection,
-          -1,
-        );
+        buffer.primary_selection = wrap_add(buffer.selections.len(), buffer.primary_selection, -1);
       }
       Char('y') => buffer.set_selections(vec![*buffer.primary_selection()]),
       Char('Y') => {
@@ -104,17 +95,29 @@ impl Mode for Normal {
 
       // View controls
       Char('v') => center(buffer, window),
-      Up => window.scroll_top = window.scroll_top.saturating_sub(1),
-      Down => window.scroll_top = window.scroll_top.saturating_add(1),
-      Left => window.scroll_left = window.scroll_left.saturating_sub(1),
-      Right => window.scroll_left = window.scroll_left.saturating_add(1),
+      Up => {
+        window.keep_cursor_visible = false;
+        window.scroll_top = window.scroll_top.saturating_sub(1);
+      }
+      Down => {
+        window.keep_cursor_visible = false;
+        window.scroll_top = window.scroll_top.saturating_add(1);
+      }
+      Left => {
+        window.keep_cursor_visible = false;
+        window.scroll_left = window.scroll_left.saturating_sub(1);
+      }
+      Right => {
+        window.keep_cursor_visible = false;
+        window.scroll_left = window.scroll_left.saturating_add(1);
+      }
 
       _ => {}
     }
     UpdateCommand::None
   }
 
-  fn status(&self) -> CowStr {
+  fn status(&self) -> CowStr<'_> {
     match &self.toast {
       Some(toast) => toast.into(),
       None => "normal".into(),
@@ -151,7 +154,6 @@ fn wrap_add(domain: usize, value: usize, delta: isize) -> usize {
   value % domain
 }
 
-
 pub fn copy(buffer: &mut Buffer) -> Vec<String> {
   let mut contents = Vec::with_capacity(buffer.selections.len());
   for i in 0..buffer.selections.len() {
@@ -168,8 +170,7 @@ pub fn copy(buffer: &mut Buffer) -> Vec<String> {
 
 pub fn paste(buffer: &mut Buffer, contents: &[String]) {
   for content_i in 0..buffer.selections.len().min(contents.len()) {
-    let selection_i =
-      (buffer.primary_selection + content_i) % buffer.selections.len();
+    let selection_i = (buffer.primary_selection + content_i) % buffer.selections.len();
     let selection = buffer
       .selections
       .get_mut(selection_i)

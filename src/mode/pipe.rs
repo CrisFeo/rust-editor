@@ -38,11 +38,8 @@ impl Mode for Pipe {
         self.command.insert_char(len, ch);
       }
       Enter => {
-        let results = pipe_selections_thru_script(
-          &self.command,
-          &buffer.contents,
-          &buffer.selections,
-        );
+        let results =
+          pipe_selections_thru_script(&self.command, &buffer.contents, &buffer.selections);
         let mut results = match results {
           Ok(results) => results,
           Err(error) => return Normal::switch_to_with_toast(error),
@@ -74,7 +71,7 @@ impl Mode for Pipe {
     UpdateCommand::None
   }
 
-  fn status(&self) -> CowStr {
+  fn status(&self) -> CowStr<'_> {
     format!("pipe > {}", self.command).into()
   }
 

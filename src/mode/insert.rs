@@ -24,7 +24,7 @@ impl Mode for Insert {
       Esc => {
         buffer.history.commit();
         return Normal::switch_to();
-      },
+      }
       Backspace => buffer.apply_operations(&[Op::Remove]),
       Tab => buffer.apply_operations(&[Op::InsertStr("  ")]),
       Enter => buffer.apply_operations(&[Op::InsertChar('\n')]),
@@ -34,7 +34,7 @@ impl Mode for Insert {
     UpdateCommand::None
   }
 
-  fn status(&self) -> CowStr {
+  fn status(&self) -> CowStr<'_> {
     "insert".into()
   }
 }

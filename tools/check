@@ -2,5 +2,5 @@
 set -euf
 . "$(dirname "$0")/config"
 
-cargo clippy $CARGO_ARGS --quiet --color always
+cargo clippy $CARGO_ARGS --quiet
 

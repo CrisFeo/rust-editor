@@ -30,7 +30,7 @@ pub trait Mode {
     key: Key,
   ) -> UpdateCommand;
 
-  fn status(&self) -> CowStr;
+  fn status(&self) -> CowStr<'_>;
 
   fn preview_selections(&self) -> Option<&Vec<Selection>> {
     None
