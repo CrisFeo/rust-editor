@@ -31,11 +31,15 @@ impl Mode for Normal {
       // Meta actions
       Char('Q') => return UpdateCommand::Quit,
       Char('W') => {
-        self.toast = if buffer.save() {
-          Some("file saved!".into())
+        if buffer.filename.is_some() {
+          self.toast = if buffer.save() {
+            Some("file saved!".into())
+          } else {
+            Some("error: could not save file".into())
+          };
         } else {
-          Some("error: could not save file".into())
-        };
+          self.toast = Some("scratch buffers cannot be saved".into());
+        }
       }
 
       // Content modifications
