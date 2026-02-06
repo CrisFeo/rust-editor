@@ -80,29 +80,25 @@ impl Screen {
   pub fn poll(&mut self) -> Key {
     loop {
       match read().expect("should read input") {
-        Event::Mouse(event) => {
-          match event.kind {
-            MouseEventKind::ScrollUp => return Key::Up,
-            MouseEventKind::ScrollDown => return Key::Down,
-            MouseEventKind::ScrollLeft => return Key::Left,
-            MouseEventKind::ScrollRight => return Key::Right,
-            _ => {}
-          }
-        }
-        Event::Key(event) => {
-          match event.code {
-            KeyCode::Backspace => return Key::Backspace,
-            KeyCode::Enter => return Key::Enter,
-            KeyCode::Left => return Key::Left,
-            KeyCode::Right => return Key::Right,
-            KeyCode::Up => return Key::Up,
-            KeyCode::Down => return Key::Down,
-            KeyCode::Tab => return Key::Tab,
-            KeyCode::Char(c) => return Key::Char(c),
-            KeyCode::Esc => return Key::Esc,
-            _ => {}
-          }
-        }
+        Event::Mouse(event) => match event.kind {
+          MouseEventKind::ScrollUp => return Key::Up,
+          MouseEventKind::ScrollDown => return Key::Down,
+          MouseEventKind::ScrollLeft => return Key::Left,
+          MouseEventKind::ScrollRight => return Key::Right,
+          _ => {}
+        },
+        Event::Key(event) => match event.code {
+          KeyCode::Backspace => return Key::Backspace,
+          KeyCode::Enter => return Key::Enter,
+          KeyCode::Left => return Key::Left,
+          KeyCode::Right => return Key::Right,
+          KeyCode::Up => return Key::Up,
+          KeyCode::Down => return Key::Down,
+          KeyCode::Tab => return Key::Tab,
+          KeyCode::Char(c) => return Key::Char(c),
+          KeyCode::Esc => return Key::Esc,
+          _ => {}
+        },
         Event::Resize(width, height) => {
           self.width = width as usize;
           self.height = height as usize;
