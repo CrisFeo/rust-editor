@@ -32,7 +32,6 @@ impl Mode for Filter {
     buffer: &mut Buffer,
     _registry: &mut Registry,
     _window: &mut Window,
-    _modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;

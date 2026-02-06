@@ -26,7 +26,6 @@ pub trait Mode {
     buffer: &mut Buffer,
     registry: &mut Registry,
     window: &mut Window,
-    modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand;
 

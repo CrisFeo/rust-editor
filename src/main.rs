@@ -36,8 +36,8 @@ fn main() {
     let mut window = Window::default();
     loop {
       view.render(mode.as_ref(), &buffer, &window);
-      let (modifiers, key) = view.poll();
-      let result = mode.update(&mut buffer, &mut registry, &mut window, modifiers, key);
+      let key = view.poll();
+      let result = mode.update(&mut buffer, &mut registry, &mut window, key);
       match result {
         UpdateCommand::Switch(next_mode) => mode = next_mode,
         UpdateCommand::None => {}

@@ -23,7 +23,6 @@ impl Mode for Normal {
     buffer: &mut Buffer,
     registry: &mut Registry,
     window: &mut Window,
-    modifiers: Modifiers,
     key: Key,
   ) -> UpdateCommand {
     use crate::key::Key::*;

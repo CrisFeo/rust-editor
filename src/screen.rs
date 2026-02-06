@@ -1,6 +1,6 @@
 use crate::*;
 use crossterm::event::{
-  read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyModifiers, MouseEventKind,
+  read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, MouseEventKind,
 };
 use crossterm::style::{Print, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::ClearType;
@@ -77,39 +77,29 @@ impl Screen {
     (self.width, self.height)
   }
 
-  pub fn poll(&mut self) -> (Modifiers, Key) {
+  pub fn poll(&mut self) -> Key {
     loop {
       match read().expect("should read input") {
         Event::Mouse(event) => {
-          let modifiers = Modifiers {
-            control: event.modifiers.contains(KeyModifiers::CONTROL),
-            shift: event.modifiers.contains(KeyModifiers::SHIFT),
-            alt: event.modifiers.contains(KeyModifiers::ALT),
-          };
           match event.kind {
-            MouseEventKind::ScrollUp => return (modifiers, Key::Up),
-            MouseEventKind::ScrollDown => return (modifiers, Key::Down),
-            MouseEventKind::ScrollLeft => return (modifiers, Key::Left),
-            MouseEventKind::ScrollRight => return (modifiers, Key::Right),
+            MouseEventKind::ScrollUp => return Key::Up,
+            MouseEventKind::ScrollDown => return Key::Down,
+            MouseEventKind::ScrollLeft => return Key::Left,
+            MouseEventKind::ScrollRight => return Key::Right,
             _ => {}
           }
         }
         Event::Key(event) => {
-          let modifiers = Modifiers {
-            control: event.modifiers.contains(KeyModifiers::CONTROL),
-            shift: event.modifiers.contains(KeyModifiers::SHIFT),
-            alt: event.modifiers.contains(KeyModifiers::ALT),
-          };
           match event.code {
-            KeyCode::Backspace => return (modifiers, Key::Backspace),
-            KeyCode::Enter => return (modifiers, Key::Enter),
-            KeyCode::Left => return (modifiers, Key::Left),
-            KeyCode::Right => return (modifiers, Key::Right),
-            KeyCode::Up => return (modifiers, Key::Up),
-            KeyCode::Down => return (modifiers, Key::Down),
-            KeyCode::Tab => return (modifiers, Key::Tab),
-            KeyCode::Char(c) => return (modifiers, Key::Char(c)),
-            KeyCode::Esc => return (modifiers, Key::Esc),
+            KeyCode::Backspace => return Key::Backspace,
+            KeyCode::Enter => return Key::Enter,
+            KeyCode::Left => return Key::Left,
+            KeyCode::Right => return Key::Right,
+            KeyCode::Up => return Key::Up,
+            KeyCode::Down => return Key::Down,
+            KeyCode::Tab => return Key::Tab,
+            KeyCode::Char(c) => return Key::Char(c),
+            KeyCode::Esc => return Key::Esc,
             _ => {}
           }
         }
