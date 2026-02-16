@@ -5,15 +5,19 @@
 - `Q` exit editor
 - `W` write buffer to file
 
+## Registry actions
+
+- `e` set target register
+
 ## Content Modifications
 
 - `d` delete selection
 - `a` insert before active anchor (insert mode)
-- `x` copy selection contents to clipboard
-- `X` paste selection contents from clipboard
+- `x` copy selections to register
+- `X` paste selections from register
 - `z` undo
 - `Z` redo
-- `r` pipe each selection through the provided command (pipe mode)
+- `r` pipe each selection through a command (pipe mode)
 
 ## Anchor movements
 

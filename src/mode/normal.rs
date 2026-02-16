@@ -42,15 +42,22 @@ impl Mode for Normal {
         }
       }
 
+      // Registry actions
+      Char('e') => return Target::switch_to(),
+
       // Content modifications
       Char('d') => {
         buffer.apply_operations(&[Op::RemoveAll]);
         buffer.history.commit();
       }
       Char('a') => return mode::Insert::switch_to(),
-      Char('x') => registry.set("clipboard", Register::Content(copy(buffer))),
+      Char('x') => {
+        let name = take_register_target(registry).unwrap_or_else(|| "clipboard".to_string());
+        registry.set(&name, Register::Content(copy(buffer)))
+      }
       Char('X') => {
-        if let Some(Register::Content(contents)) = registry.get("clipboard") {
+        let name = take_register_target(registry).unwrap_or_else(|| "clipboard".to_string());
+        if let Some(Register::Content(contents)) = registry.get(&name) {
           paste(buffer, contents);
         }
       }
@@ -209,4 +216,18 @@ pub fn redo(buffer: &mut Buffer) {
   };
   let selections = changes.apply(&mut buffer.contents);
   buffer.set_selections(selections);
+}
+
+pub fn take_register_target(registry: &mut Registry) -> Option<String> {
+  match registry.get("target") {
+    Some(Register::Content(target)) => match target.as_slice() {
+      [name, ..] => {
+        let name = name.to_string();
+        registry.del("target");
+        Some(name)
+      }
+      _ => None,
+    },
+    _ => None,
+  }
 }

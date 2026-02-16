@@ -1,10 +1,9 @@
-use crate::*;
 use std::collections::HashMap;
 
 pub enum Register {
   Content(Vec<String>),
   //Selections(Vec<Selection>, usize),
-  Regex(Regex),
+  //Regex(Regex),
   //Input(Rope),
 }
 
@@ -16,7 +15,11 @@ impl Registry {
     self.0.insert(key.to_string(), value);
   }
 
-  pub fn get(&mut self, key: &str) -> Option<&Register> {
+  pub fn get(&self, key: &str) -> Option<&Register> {
     self.0.get(key)
+  }
+
+  pub fn del(&mut self, key: &str) {
+    self.0.remove(key);
   }
 }

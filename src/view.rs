@@ -1,26 +1,26 @@
 use crate::*;
 
 pub struct Theme {
-  pub accent_color: Color,
-  pub ramp_0_color: Color,
-  pub ramp_1_color: Color,
-  pub ramp_2_color: Color,
+  pub new_line_char: char,
+  pub end_of_file_char: char,
+  pub default_face: (Color, Color),
+  pub selection_primary_face: (Color, Color),
+  pub selection_secondary_face: (Color, Color),
+  pub cursor_primary_face: (Color, Color),
+  pub cursor_secondary_face: (Color, Color),
+  pub status_face: (Color, Color),
 }
 
 pub struct View {
   screen: Screen,
   theme: Theme,
-  new_line_char: char,
-  end_of_file_char: char,
 }
 
 impl View {
   pub fn create(theme: Theme) -> Self {
     Self {
-      screen: Screen::create(theme.ramp_0_color, theme.ramp_2_color),
+      screen: Screen::create(theme.default_face.0, theme.default_face.1),
       theme,
-      new_line_char: '¬',
-      end_of_file_char: 'Ω',
     }
   }
 
@@ -82,7 +82,7 @@ impl View {
               if !is_selection {
                 ' '
               } else {
-                self.new_line_char
+                self.theme.new_line_char
               }
             }
             ch => ch,
@@ -102,7 +102,9 @@ impl View {
           }
         }
         if let Some((bg, fg)) = style {
-          self.screen.draw(row, col, self.end_of_file_char, bg, fg);
+          self
+            .screen
+            .draw(row, col, self.theme.end_of_file_char, bg, fg);
         }
       }
     }
@@ -142,8 +144,8 @@ impl View {
           height.saturating_sub(1),
           i,
           ch,
-          self.theme.accent_color,
-          self.theme.ramp_0_color,
+          self.theme.status_face.0,
+          self.theme.status_face.1,
         );
       }
     }
@@ -173,24 +175,20 @@ impl View {
   }
 
   fn style(&self, is_selection: bool, is_primary: bool, is_cursor: bool) -> (Color, Color) {
-    let mut bg = self.theme.ramp_0_color;
-    let mut fg = self.theme.ramp_2_color;
+    let mut face = self.theme.default_face;
     if is_selection {
       if is_primary {
         if is_cursor {
-          bg = self.theme.accent_color;
+          face = self.theme.cursor_primary_face;
         } else {
-          bg = self.theme.ramp_2_color;
+          face = self.theme.selection_primary_face;
         };
-        fg = self.theme.ramp_0_color;
       } else if is_cursor {
-        bg = self.theme.ramp_2_color;
-        fg = self.theme.ramp_0_color;
+        face = self.theme.cursor_secondary_face;
       } else {
-        bg = self.theme.ramp_1_color;
-        fg = self.theme.ramp_2_color;
+        face = self.theme.selection_secondary_face;
       }
     }
-    (bg, fg)
+    face
   }
 }

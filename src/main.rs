@@ -2,20 +2,6 @@ use rust_editor::*;
 use std::panic::{catch_unwind, resume_unwind};
 use std::process::exit;
 
-const DEFAULT_THEME: Theme = Theme {
-  accent_color: Color(95, 135, 0),
-  ramp_0_color: Color(0, 0, 0),
-  ramp_1_color: Color(78, 78, 78),
-  ramp_2_color: Color(188, 188, 188),
-};
-
-const E_INK_THEME: Theme = Theme {
-  accent_color: Color(120, 120, 120),
-  ramp_0_color: Color(255, 255, 255),
-  ramp_1_color: Color(188, 188, 188),
-  ramp_2_color: Color(0, 0, 0),
-};
-
 fn main() {
   let filename = std::env::args().nth(1);
   let result = catch_unwind(|| {
@@ -32,7 +18,23 @@ fn main() {
     };
     let mut registry = Registry::default();
     let mut mode: Box<dyn Mode> = Box::new(Normal::default());
-    let mut view = View::create(DEFAULT_THEME);
+    let theme = {
+      let ramp_0 = Color(255, 255, 255);
+      let ramp_1 = Color(188, 188, 188);
+      let ramp_2 = Color(120, 120, 120);
+      let ramp_3 = Color(0, 0, 0);
+      Theme {
+        default_face: (ramp_0, ramp_3),
+        selection_primary_face: (ramp_1, ramp_3),
+        selection_secondary_face: (ramp_1, ramp_3),
+        cursor_primary_face: (ramp_3, ramp_0),
+        cursor_secondary_face: (ramp_2, ramp_0),
+        status_face: (ramp_0, ramp_2),
+        new_line_char: '¬',
+        end_of_file_char: 'Ω',
+      }
+    };
+    let mut view = View::create(theme);
     let mut window = Window::default();
     loop {
       view.render(mode.as_ref(), &buffer, &window);
