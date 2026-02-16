@@ -45,7 +45,7 @@ impl Window {
       self.scroll_left = 0;
       return;
     }
-    let index = index.min(contents.len_chars().saturating_sub(1));
+    let index = index.min(contents.len_chars());
     let row = contents.char_to_line(index);
     if row < self.scroll_top {
       self.scroll_top = row;

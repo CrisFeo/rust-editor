@@ -111,6 +111,7 @@ impl View {
     // render status bar
     {
       let status_left = mode.status();
+      let status_left_size = status_left.chars().count();
       let status_right = {
         let cursor_location = match primary_selection {
           Some(primary_selection) => {
@@ -122,18 +123,30 @@ impl View {
           None => "".to_string(),
         };
         let buffer_name = match &buffer.filename {
-          Some(filename) => format!(" {filename}"),
+          Some(filename) => {
+            let cursor_location_size = cursor_location.chars().count();
+            let available_size = width.saturating_sub(status_left_size + cursor_location_size);
+            let required_size = filename.chars().count() + 1;
+            if required_size <= available_size {
+              format!(" {filename}")
+            } else {
+              let start = required_size + 1 - available_size;
+              let name = filename.chars().skip(start).collect::<String>();
+              format!(" …{name}")
+            }
+          }
           None => "".to_string(),
         };
         format!("{cursor_location}{buffer_name}")
       };
-      let status_min_size = status_left.len() + status_right.len();
-      let status = if status_min_size < width {
+      let status_right_size = status_right.chars().count();
+      let status_min_size = status_left_size + status_right_size;
+      let status = if status_min_size <= width {
         let status_gap_size = width - status_min_size;
         let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
         format!("{status_left}{status_gap}{status_right}")
-      } else if status_left.len() < width {
-        let status_gap_size = width - status_left.len();
+      } else if status_left_size < width {
+        let status_gap_size = width - status_left_size;
         let status_gap = (0..status_gap_size).map(|_| " ").collect::<String>();
         format!("{status_left}{status_gap}")
       } else {

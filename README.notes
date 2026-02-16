@@ -54,21 +54,18 @@
 
 # tasks
 - [x] scroll wheel support
-- [ ] push cursor on scroll
-- [ ] improve status path rendering
-  - elide path middle
-  - trim path cwd
-  - trim path home
-- [ ] bug: scroll down to trailing newline
-- [ ] semantic colorscheme
-  - eink colorscheme pass
+- [x] push cursor on non-scroll
+- [-] move to raw terminal sequences
+- [x] semantic colorscheme
+- [x] bug: scroll down to trailing newline
+- [x] improve status path rendering
+- [-] bug: status foreground flicker
+- [x] bug: crash on command overflow
 - [ ] macros
   - text representation of keys
   - "history" buffer to copy from
   - early exit on errors?
-- [ ] bug: status foreground flicker
 - [ ] fast repeat last command on enter
-- [ ] move to raw terminal sequences
 - [ ] multibuffer
 - [ ] vimgrep file:line:col support
-- [ ] ctrl-z support
+- [ ] ctrl-z (suspend) support
