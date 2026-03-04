@@ -8,9 +8,17 @@
 - [x] bug: crash on command overflow
 - [x] macros: initial implementation
 - [ ] multibuffer support
+  - open buffer
+  - close buffer
+  - reload buffer from disk
+  - readonly buffers?
+    - could just copy to tmpfile?
+  - scratch buffers?
+    - could just use tmpfiles?
 - [ ] fast repeat last command on enter
-- [ ] macros: "history" buffer to copy from
-- [ ] macros: early exit on errors?
 - [ ] vimgrep argument support
 - [ ] ctrl-z (suspend) support
+- [ ] add help/quickref page on `?`
+- [ ] macros: "history" buffer to copy from
+- [ ] macros: early exit on errors?
 

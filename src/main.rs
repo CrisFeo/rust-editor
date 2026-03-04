@@ -20,23 +20,28 @@ fn main() {
     let mut registry = Registry::default();
     let mut mode: Box<dyn Mode> = Box::new(Normal::default());
     let theme = {
-      let ramp_0 = Color(255, 255, 255);
-      let ramp_1 = Color(188, 188, 188);
-      let ramp_2 = Color(120, 120, 120);
-      let ramp_3 = Color(0, 0, 0);
+      let mut ramp = [
+        Some(Color::Black),
+        Some(Color::DarkGrey),
+        Some(Color::Grey),
+        Some(Color::White),
+      ];
+      if option_env!("THEME") == Some("light") {
+        ramp.reverse();
+      }
       Theme {
-        default_face: (ramp_0, ramp_3),
-        selection_primary_face: (ramp_1, ramp_3),
-        selection_secondary_face: (ramp_1, ramp_3),
-        cursor_primary_face: (ramp_3, ramp_0),
-        cursor_secondary_face: (ramp_2, ramp_0),
-        status_face: (ramp_0, ramp_2),
+        default_face: (None, None),
+        selection_primary_face: (ramp[1], ramp[0]),
+        selection_secondary_face: (ramp[1], ramp[0]),
+        cursor_primary_face: (ramp[3], ramp[0]),
+        cursor_secondary_face: (ramp[2], ramp[0]),
+        status_face: (ramp[0], ramp[3]),
         new_line_char: '¬',
         end_of_file_char: 'Ω',
       }
     };
     let mut view = View::create(theme);
-    let mut window = Window::default();
+    let mut window = Window::new(view.buffer_size());
     let mut macro_keys: Option<VecDeque<Key>> = None;
     loop {
       view.render(mode.as_ref(), &buffer, &window);
@@ -53,8 +58,8 @@ fn main() {
       };
       let result = mode.update(&mut buffer, &mut registry, &mut window, key);
       match result {
-        UpdateCommand::Switch(next_mode) => mode = next_mode,
-        UpdateCommand::Macro(keys) => {
+        UpdateCommand::SwitchMode(next_mode) => mode = next_mode,
+        UpdateCommand::SendKeys(keys) => {
           if let Some(ref mut macro_keys) = macro_keys {
             for key in keys.iter().rev() {
               macro_keys.push_front(*key);

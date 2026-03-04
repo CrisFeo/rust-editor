@@ -17,8 +17,8 @@ pub use target::*;
 use crate::*;
 
 pub enum UpdateCommand {
-  Switch(Box<dyn Mode>),
-  Macro(Vec<Key>),
+  SwitchMode(Box<dyn Mode>),
+  SendKeys(Vec<Key>),
   Quit,
   None,
 }

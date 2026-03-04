@@ -5,7 +5,7 @@ pub struct Insert;
 impl Insert {
   pub fn switch_to() -> UpdateCommand {
     let mode = Self;
-    UpdateCommand::Switch(Box::new(mode))
+    UpdateCommand::SwitchMode(Box::new(mode))
   }
 }
 

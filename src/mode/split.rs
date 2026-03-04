@@ -22,7 +22,7 @@ impl Split {
       command: Rope::new(),
       preview: ModeResult::Empty,
     };
-    UpdateCommand::Switch(Box::new(mode))
+    UpdateCommand::SwitchMode(Box::new(mode))
   }
 }
 

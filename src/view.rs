@@ -3,12 +3,12 @@ use crate::*;
 pub struct Theme {
   pub new_line_char: char,
   pub end_of_file_char: char,
-  pub default_face: (Color, Color),
-  pub selection_primary_face: (Color, Color),
-  pub selection_secondary_face: (Color, Color),
-  pub cursor_primary_face: (Color, Color),
-  pub cursor_secondary_face: (Color, Color),
-  pub status_face: (Color, Color),
+  pub default_face: (Option<Color>, Option<Color>),
+  pub selection_primary_face: (Option<Color>, Option<Color>),
+  pub selection_secondary_face: (Option<Color>, Option<Color>),
+  pub cursor_primary_face: (Option<Color>, Option<Color>),
+  pub cursor_secondary_face: (Option<Color>, Option<Color>),
+  pub status_face: (Option<Color>, Option<Color>),
 }
 
 pub struct View {
@@ -19,7 +19,7 @@ pub struct View {
 impl View {
   pub fn create(theme: Theme) -> Self {
     Self {
-      screen: Screen::create(theme.default_face.0, theme.default_face.1),
+      screen: Screen::create(),
       theme,
     }
   }
@@ -187,7 +187,7 @@ impl View {
     (is_selection, is_primary, is_cursor)
   }
 
-  fn style(&self, is_selection: bool, is_primary: bool, is_cursor: bool) -> (Color, Color) {
+  fn style(&self, is_selection: bool, is_primary: bool, is_cursor: bool) -> (Option<Color>, Option<Color>) {
     let mut face = self.theme.default_face;
     if is_selection {
       if is_primary {

@@ -1,6 +1,5 @@
 use ropey::Rope;
 
-#[derive(Default)]
 pub struct Window {
   pub keep_cursor_visible: bool,
   pub scroll_top: usize,
@@ -10,10 +9,19 @@ pub struct Window {
 }
 
 impl Window {
+  pub fn new(size: (usize, usize)) -> Self {
+    Self {
+      keep_cursor_visible: true,
+      scroll_top: 0,
+      scroll_left: 0,
+      width: size.0,
+      height: size.1,
+    }
+  }
+
   pub fn set_size(&mut self, size: (usize, usize)) {
-    let (width, height) = size;
-    self.width = width;
-    self.height = height;
+    self.width = size.0;
+    self.height = size.1;
   }
 
   pub fn to_scroll_position(&self, contents: &Rope, index: usize) -> Option<(usize, usize)> {

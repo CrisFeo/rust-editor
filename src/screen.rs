@@ -2,7 +2,7 @@ use crate::*;
 use crossterm::event::{
   read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, MouseEventKind,
 };
-use crossterm::style::{Print, SetBackgroundColor, SetForegroundColor};
+use crossterm::style::{Print, ResetColor, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::ClearType;
 use crossterm::{cursor, execute, queue, terminal};
 use gag::Hold;
@@ -10,7 +10,25 @@ use std::io::{self, BufWriter, Stdout, Write};
 
 impl From<Color> for crossterm::style::Color {
   fn from(c: Color) -> Self {
-    (c.0, c.1, c.2).into()
+    match c {
+      Color::DarkGrey => crossterm::style::Color::DarkGrey,
+      Color::Black => crossterm::style::Color::Black,
+      Color::Red => crossterm::style::Color::Red,
+      Color::DarkRed => crossterm::style::Color::DarkRed,
+      Color::Green => crossterm::style::Color::Green,
+      Color::DarkGreen => crossterm::style::Color::DarkGreen,
+      Color::Yellow => crossterm::style::Color::Yellow,
+      Color::DarkYellow => crossterm::style::Color::DarkYellow,
+      Color::Blue => crossterm::style::Color::Blue,
+      Color::DarkBlue => crossterm::style::Color::DarkBlue,
+      Color::Magenta => crossterm::style::Color::Magenta,
+      Color::DarkMagenta => crossterm::style::Color::DarkMagenta,
+      Color::Cyan => crossterm::style::Color::Cyan,
+      Color::DarkCyan => crossterm::style::Color::DarkCyan,
+      Color::White => crossterm::style::Color::White,
+      Color::Grey => crossterm::style::Color::Grey,
+      Color::Rgb(r, g, b) => (r, g, b).into(),
+    }
   }
 }
 
@@ -18,7 +36,7 @@ impl From<Color> for crossterm::style::Color {
 enum Cell {
   Unknown,
   Unchanged,
-  Changed(char, Color, Color),
+  Changed(char, Option<Color>, Option<Color>),
 }
 
 pub struct Screen {
@@ -28,14 +46,12 @@ pub struct Screen {
   width: usize,
   height: usize,
   current_cursor: (usize, usize),
-  default_bg: Color,
-  default_fg: Color,
-  current_bg: Color,
-  current_fg: Color,
+  current_bg: Option<Color>,
+  current_fg: Option<Color>,
 }
 
 impl Screen {
-  pub fn create(bg: Color, fg: Color) -> Self {
+  pub fn create() -> Self {
     let held_stderr = gag::Hold::stderr().expect("should gag stderr");
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
     execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
@@ -43,10 +59,8 @@ impl Screen {
     queue!(output, terminal::Clear(ClearType::All)).expect("should clear screen");
     queue!(output, cursor::Hide).expect("should hide cursor");
     queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor when setting up");
-    queue!(output, SetBackgroundColor(bg.into()))
-      .expect("should set background color when setting up");
-    queue!(output, SetForegroundColor(fg.into()))
-      .expect("should set foreground color when setting up");
+    queue!(output, ResetColor)
+      .expect("should reset colors when setting up");
     queue!(output, EnableMouseCapture).expect("should enable mouse when setting up");
     output
       .flush()
@@ -66,10 +80,8 @@ impl Screen {
       width,
       height,
       current_cursor: (0, 0),
-      default_bg: bg,
-      default_fg: fg,
-      current_bg: bg,
-      current_fg: fg,
+      current_bg: None,
+      current_fg: None,
     }
   }
 
@@ -110,7 +122,7 @@ impl Screen {
   }
 
   pub fn clear(&mut self) {
-    let blank = Cell::Changed(' ', self.default_bg, self.default_fg);
+    let blank = Cell::Changed(' ', None, None);
     for cell in &mut self.buffer {
       if *cell == blank {
         *cell = Cell::Unchanged;
@@ -120,7 +132,7 @@ impl Screen {
     }
   }
 
-  pub fn draw(&mut self, row: usize, col: usize, ch: char, bg: Color, fg: Color) {
+  pub fn draw(&mut self, row: usize, col: usize, ch: char, bg: Option<Color>, fg: Option<Color>) {
     if row >= self.height || col >= self.width {
       return;
     }
@@ -139,16 +151,30 @@ impl Screen {
     }
   }
 
-  fn set_bg(&mut self, color: Color) {
+  fn set_bg(&mut self, color: Option<Color>) {
     if color != self.current_bg {
-      queue!(self.output, SetBackgroundColor(color.into())).expect("should set background color");
+      if let Some(color) = color {
+        queue!(self.output, SetBackgroundColor(color.into())).expect("should set background color");
+      } else {
+        queue!(self.output, ResetColor).expect("should reset colors");
+        if let Some(color) = self.current_fg {
+          queue!(self.output, SetForegroundColor(color.into())).expect("should reset other color");
+        }
+      }
       self.current_bg = color;
     }
   }
 
-  fn set_fg(&mut self, color: Color) {
+  fn set_fg(&mut self, color: Option<Color>) {
     if color != self.current_fg {
-      queue!(self.output, SetForegroundColor(color.into())).expect("should set foreground color");
+      if let Some(color) = color {
+        queue!(self.output, SetForegroundColor(color.into())).expect("should set foreground color");
+      } else {
+        queue!(self.output, ResetColor).expect("should reset colors");
+        if let Some(color) = self.current_bg {
+          queue!(self.output, SetBackgroundColor(color.into())).expect("should reset other color");
+        }
+      }
       self.current_fg = color;
     }
   }
@@ -159,8 +185,8 @@ impl Screen {
         match self.buffer[row * self.width + col] {
           Cell::Unknown => {
             self.set_cursor(row, col);
-            self.set_bg(self.default_bg);
-            self.set_fg(self.default_fg);
+            self.set_bg(None);
+            self.set_fg(None);
             queue!(self.output, Print(' ')).expect("should queue printing character");
           }
           Cell::Unchanged => {}

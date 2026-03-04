@@ -10,7 +10,7 @@ pub struct Pipe {
 
 impl Pipe {
   pub fn switch_to() -> UpdateCommand {
-    UpdateCommand::Switch(Box::new(Self::default()))
+    UpdateCommand::SwitchMode(Box::new(Self::default()))
   }
 }
 

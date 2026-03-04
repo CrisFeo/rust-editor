@@ -7,11 +7,11 @@ pub struct Normal {
 
 impl Normal {
   pub fn switch_to() -> UpdateCommand {
-    UpdateCommand::Switch(Box::new(Self::default()))
+    UpdateCommand::SwitchMode(Box::new(Self::default()))
   }
 
   pub fn switch_to_with_toast(toast: impl Into<String>) -> UpdateCommand {
-    UpdateCommand::Switch(Box::new(Self {
+    UpdateCommand::SwitchMode(Box::new(Self {
       toast: Some(toast.into()),
     }))
   }
@@ -46,7 +46,7 @@ impl Mode for Normal {
         if let Some(Register::Content(contents)) = registry.get(&name) {
           if let Some(contents) = contents.first() {
             let keys = Key::from_input(contents);
-            return UpdateCommand::Macro(keys)
+            return UpdateCommand::SendKeys(keys)
           }
         }
       },

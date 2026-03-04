@@ -1,2 +1,20 @@
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Color(pub u8, pub u8, pub u8);
+pub enum Color {
+  DarkGrey,
+  Black,
+  Red,
+  DarkRed,
+  Green,
+  DarkGreen,
+  Yellow,
+  DarkYellow,
+  Blue,
+  DarkBlue,
+  Magenta,
+  DarkMagenta,
+  Cyan,
+  DarkCyan,
+  White,
+  Grey,
+  Rgb(u8, u8, u8),
+}

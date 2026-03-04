@@ -9,7 +9,7 @@ pub struct Target {
 impl Target {
   pub fn switch_to() -> UpdateCommand {
     let mode = Self { name: Rope::new() };
-    UpdateCommand::Switch(Box::new(mode))
+    UpdateCommand::SwitchMode(Box::new(mode))
   }
 }
 
