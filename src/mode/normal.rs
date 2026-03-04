@@ -179,8 +179,9 @@ pub fn copy(buffer: &mut Buffer) -> Vec<String> {
 }
 
 pub fn paste(buffer: &mut Buffer, contents: &[String]) {
-  for content_i in 0..buffer.selections.len().min(contents.len()) {
-    let selection_i = (buffer.primary_selection + content_i) % buffer.selections.len();
+  for selection_i in 0..buffer.selections.len() {
+    let content_i = selection_i % contents.len();
+    let selection_i = (buffer.primary_selection + selection_i) % buffer.selections.len();
     let selection = buffer
       .selections
       .get_mut(selection_i)
