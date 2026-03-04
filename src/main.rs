@@ -1,6 +1,7 @@
 use rust_editor::*;
 use std::panic::{catch_unwind, resume_unwind};
 use std::process::exit;
+use std::collections::VecDeque;
 
 fn main() {
   let filename = std::env::args().nth(1);
@@ -36,12 +37,32 @@ fn main() {
     };
     let mut view = View::create(theme);
     let mut window = Window::default();
+    let mut macro_keys: Option<VecDeque<Key>> = None;
     loop {
       view.render(mode.as_ref(), &buffer, &window);
-      let key = view.poll();
+      let key = {
+        if let Some(ref mut keys) = macro_keys {
+          if let Some(key) = keys.pop_front() {
+            key
+          } else {
+            view.poll()
+          }
+        } else {
+          view.poll()
+        }
+      };
       let result = mode.update(&mut buffer, &mut registry, &mut window, key);
       match result {
         UpdateCommand::Switch(next_mode) => mode = next_mode,
+        UpdateCommand::Macro(keys) => {
+          if let Some(ref mut macro_keys) = macro_keys {
+            for key in keys.iter().rev() {
+              macro_keys.push_front(*key);
+            }
+          } else {
+            macro_keys = Some(keys.into());
+          }
+        },
         UpdateCommand::None => {}
         UpdateCommand::Quit => break,
       }

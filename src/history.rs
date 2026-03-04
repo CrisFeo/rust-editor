@@ -78,6 +78,7 @@ mod tests {
   fn add(index: usize, content: &str) -> Change {
     Change::Addition(index, content.into())
   }
+
   fn del(index: usize, content: &str) -> Change {
     Change::Removal(index, content.into())
   }

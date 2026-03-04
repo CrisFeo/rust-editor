@@ -4,6 +4,7 @@
 
 - `Q` exit editor
 - `W` write buffer to file
+- `m` play macro (default target: "macro")
 
 ## Registry actions
 
@@ -13,8 +14,8 @@
 
 - `d` delete selection
 - `a` insert before active anchor (insert mode)
-- `x` copy selections to register
-- `X` paste selections from register
+- `x` copy selections to register (default target: "clipboard")
+- `X` paste selections from register (default target: "clipboard")
 - `z` undo
 - `Z` redo
 - `r` pipe each selection through a command (pipe mode)
@@ -51,21 +52,3 @@
 - `down`  move view down one line
 - `left`  move view left one line
 - `right` move view right one line
-
-# tasks
-- [x] scroll wheel support
-- [x] push cursor on non-scroll
-- [-] move to raw terminal sequences
-- [x] semantic colorscheme
-- [x] bug: scroll down to trailing newline
-- [x] improve status path rendering
-- [-] bug: status foreground flicker
-- [x] bug: crash on command overflow
-- [ ] macros
-  - text representation of keys
-  - "history" buffer to copy from
-  - early exit on errors?
-- [ ] fast repeat last command on enter
-- [ ] multibuffer
-- [ ] vimgrep file:line:col support
-- [ ] ctrl-z (suspend) support

@@ -18,6 +18,7 @@ use crate::*;
 
 pub enum UpdateCommand {
   Switch(Box<dyn Mode>),
+  Macro(Vec<Key>),
   Quit,
   None,
 }

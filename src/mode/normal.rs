@@ -41,6 +41,15 @@ impl Mode for Normal {
           self.toast = Some("scratch buffers cannot be saved".into());
         }
       }
+      Char('m') => {
+        let name = take_register_target(registry).unwrap_or_else(|| "macro".to_string());
+        if let Some(Register::Content(contents)) = registry.get(&name) {
+          if let Some(contents) = contents.first() {
+            let keys = Key::from_input(contents);
+            return UpdateCommand::Macro(keys)
+          }
+        }
+      },
 
       // Registry actions
       Char('e') => return Target::switch_to(),
