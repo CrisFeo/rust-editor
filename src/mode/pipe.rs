@@ -5,7 +5,7 @@ use std::process::{Command, Stdio};
 
 #[derive(Default)]
 pub struct Pipe {
-  command: Rope,
+  editor: MiniEditor,
 }
 
 impl Pipe {
@@ -22,22 +22,14 @@ impl Mode for Pipe {
     _window: &mut Window,
     key: Key,
   ) -> UpdateCommand {
-    use crate::key::Key::*;
-    match key {
-      Esc => return Normal::switch_to(),
-      Backspace => {
-        let len = self.command.len_chars();
-        if len > 0 {
-          self.command.remove(len - 1..len);
-        }
-      }
-      Char(ch) => {
-        let len = self.command.len_chars();
-        self.command.insert_char(len, ch);
-      }
-      Enter => {
-        let results =
-          pipe_selections_thru_script(&self.command, &buffer.contents, &buffer.selections);
+    match self.editor.update(key) {
+      MiniEditorCommand::Cancel => return Normal::switch_to(),
+      MiniEditorCommand::Submit => {
+        let results = pipe_selections_thru_script(
+          &self.editor.value,
+          &buffer.contents,
+          &buffer.selections,
+        );
         let mut results = match results {
           Ok(results) => results,
           Err(error) => return Normal::switch_to_with_toast(error),
@@ -63,14 +55,15 @@ impl Mode for Pipe {
         buffer.history.commit();
         buffer.set_selections(selections);
         return Normal::switch_to();
-      }
-      _ => {}
+      },
+      MiniEditorCommand::Update => {},
+      MiniEditorCommand::None => { },
     }
     UpdateCommand::None
   }
 
   fn status(&self) -> CowStr<'_> {
-    format!("pipe > {}", self.command).into()
+    format!("pipe > {}", self.editor.value).into()
   }
 
   fn preview_selections(&self) -> Option<&Vec<Selection>> {

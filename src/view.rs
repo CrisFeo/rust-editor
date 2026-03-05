@@ -44,5 +44,15 @@ impl Views {
     self.entries.push(view);
     index
   }
+
+  pub fn next(&mut self) {
+    let current = self.selected % self.entries.len();
+    self.selected = current.wrapping_add(1) % self.entries.len();
+  }
+
+  pub fn previous(&mut self) {
+    let current = self.selected % self.entries.len();
+    self.selected = current.wrapping_sub(1) % self.entries.len();
+  }
 }
 

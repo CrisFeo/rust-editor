@@ -11,7 +11,7 @@ enum ModeResult {
 #[derive(Debug, Clone)]
 pub struct Split {
   reject: bool,
-  command: Rope,
+  editor: MiniEditor,
   preview: ModeResult,
 }
 
@@ -19,7 +19,7 @@ impl Split {
   pub fn switch_to(reject: bool) -> UpdateCommand {
     let mode = Self {
       reject,
-      command: Rope::new(),
+      editor: Default::default(),
       preview: ModeResult::Empty,
     };
     UpdateCommand::SwitchMode(Box::new(mode))
@@ -34,23 +34,11 @@ impl Mode for Split {
     _window: &mut Window,
     key: Key,
   ) -> UpdateCommand {
-    use crate::key::Key::*;
-    match key {
-      Esc => return Normal::switch_to(),
-      Backspace => {
-        let len = self.command.len_chars();
-        if len > 0 {
-          self.command.remove(len - 1..len);
-          update_preview(self, buffer);
-        }
-      }
-      Char(ch) => {
-        let len = self.command.len_chars();
-        self.command.insert_char(len, ch);
-        update_preview(self, buffer);
-      }
-      Enter => {
-        let command = self.command.to_string();
+    match self.editor.update(key) {
+      MiniEditorCommand::Cancel => return Normal::switch_to(),
+      MiniEditorCommand::Update => update_preview(self, buffer),
+      MiniEditorCommand::Submit => {
+        let command = self.editor.value.to_string();
         let result = match self.reject {
           true => reject(&buffer.contents, &buffer.selections, &command),
           false => accept(&buffer.contents, &buffer.selections, &command),
@@ -60,8 +48,8 @@ impl Mode for Split {
           buffer.set_selections(selections);
         }
         return Normal::switch_to();
-      }
-      _ => {}
+      },
+      MiniEditorCommand::None => { },
     }
     UpdateCommand::None
   }
@@ -73,7 +61,7 @@ impl Mode for Split {
       ModeResult::Ok(x) if x.is_empty() => "[_]",
       ModeResult::Ok(_) => "[*]",
     };
-    format!("split {} > {}", match_indicator, self.command).into()
+    format!("split {} > {}", match_indicator, self.editor.value).into()
   }
 
   fn preview_selections(&self) -> Option<&Vec<Selection>> {
@@ -87,7 +75,7 @@ impl Mode for Split {
 }
 
 fn update_preview(mode: &mut Split, buffer: &Buffer) {
-  let command = mode.command.to_string();
+  let command = mode.editor.value.to_string();
   let result = match mode.reject {
     true => reject(&buffer.contents, &buffer.selections, &command),
     false => accept(&buffer.contents, &buffer.selections, &command),

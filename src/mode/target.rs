@@ -1,14 +1,13 @@
 use crate::*;
-use ropey::Rope;
 
 #[derive(Debug, Clone)]
 pub struct Target {
-  name: Rope,
+  editor: MiniEditor,
 }
 
 impl Target {
   pub fn switch_to() -> UpdateCommand {
-    let mode = Self { name: Rope::new() };
+    let mode = Self { editor: Default::default() };
     UpdateCommand::SwitchMode(Box::new(mode))
   }
 }
@@ -21,31 +20,21 @@ impl Mode for Target {
     _window: &mut Window,
     key: Key,
   ) -> UpdateCommand {
-    use crate::key::Key::*;
-    match key {
-      Esc => return Normal::switch_to(),
-      Backspace => {
-        let len = self.name.len_chars();
-        if len > 0 {
-          self.name.remove(len - 1..len);
-        }
-      }
-      Char(ch) => {
-        let len = self.name.len_chars();
-        self.name.insert_char(len, ch);
-      }
-      Enter => {
-        let name = self.name.to_string();
+    match self.editor.update(key) {
+      MiniEditorCommand::Cancel => return Normal::switch_to(),
+      MiniEditorCommand::Submit => {
+        let name = self.editor.value.to_string();
         let value = Register::Content(vec![name]);
         registry.set("target", value);
         return Normal::switch_to();
-      }
-      _ => {}
+      },
+      MiniEditorCommand::Update => {},
+      MiniEditorCommand::None => { },
     }
     UpdateCommand::None
   }
 
   fn status(&self) -> CowStr<'_> {
-    format!("target > {}", self.name).into()
+    format!("target > {}", self.editor.value).into()
   }
 }

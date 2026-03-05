@@ -12,7 +12,7 @@ enum ModeResult {
 #[derive(Debug, Clone)]
 pub struct Seek {
   reverse: bool,
-  command: Rope,
+  editor: MiniEditor,
   preview: ModeResult,
 }
 
@@ -20,7 +20,7 @@ impl Seek {
   pub fn switch_to(reverse: bool) -> UpdateCommand {
     let mode = Self {
       reverse,
-      command: Rope::new(),
+      editor: Default::default(),
       preview: ModeResult::Empty,
     };
     UpdateCommand::SwitchMode(Box::new(mode))
@@ -35,23 +35,12 @@ impl Mode for Seek {
     _window: &mut Window,
     key: Key,
   ) -> UpdateCommand {
-    use crate::key::Key::*;
-    match key {
-      Esc => return Normal::switch_to(),
-      Backspace => {
-        let len = self.command.len_chars();
-        if len > 0 {
-          self.command.remove(len - 1..len);
-          update_preview(self, buffer);
-        }
-      }
-      Char(ch) => {
-        let len = self.command.len_chars();
-        self.command.insert_char(len, ch);
-        update_preview(self, buffer);
-      }
-      Enter => {
-        let command = self.command.to_string();
+    let result = self.editor.update(key);
+    match result {
+      MiniEditorCommand::Cancel => return Normal::switch_to(),
+      MiniEditorCommand::Update => update_preview(self, buffer),
+      MiniEditorCommand::Submit => {
+        let command = self.editor.value.to_string();
         let result = match self.reverse {
           true => reverse(&buffer.contents, &buffer.selections, &command),
           false => forward(&buffer.contents, &buffer.selections, &command),
@@ -61,8 +50,8 @@ impl Mode for Seek {
           buffer.set_selections(selections);
         }
         return Normal::switch_to();
-      }
-      _ => {}
+      },
+      MiniEditorCommand::None => { },
     }
     UpdateCommand::None
   }
@@ -74,7 +63,7 @@ impl Mode for Seek {
       ModeResult::Same => "[_]",
       ModeResult::Ok(_) => "[*]",
     };
-    format!("seek {} > {}", match_indicator, self.command).into()
+    format!("seek {} > {}", match_indicator, self.editor.value).into()
   }
 
   fn preview_selections(&self) -> Option<&Vec<Selection>> {
@@ -88,7 +77,7 @@ impl Mode for Seek {
 }
 
 fn update_preview(mode: &mut Seek, buffer: &Buffer) {
-  let command = mode.command.to_string();
+  let command = mode.editor.value.to_string();
   let result = match mode.reverse {
     true => reverse(&buffer.contents, &buffer.selections, &command),
     false => forward(&buffer.contents, &buffer.selections, &command),
