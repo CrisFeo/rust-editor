@@ -10,45 +10,44 @@ fn main() {
     let mut views = Views::default();
     let mut registry = Registry::default();
     let mut recorder = Recorder::default();
-    views.add(
-      load_initial_buffer(filename),
-      Window::new(ui.buffer_size()),
-    );
-    'app_loop: loop {
-      let Some(view) = views.current() else {
-        break 'app_loop;
-      };
+    views.add(load_buffer(filename), Window::new(ui.buffer_size()));
+    'main_loop: loop {
       if let Some(keys) = recorder.take() {
         for key in keys {
-          let command = view.update(&mut registry, &mut recorder, key);
-          if let UpdateCommand::Quit = command {
-            break 'app_loop
+          let should_quit = update_application(&ui, &mut views, &mut registry, &mut recorder, key);
+          if should_quit {
+            break 'main_loop
           }
         }
       } else {
+        let view = views.current();
         ui.render(view);
         let event = ui.poll();
         match event {
           Event::Key(key) => {
-            let command = view.update(&mut registry, &mut recorder, key);
-            if let UpdateCommand::Quit = command {
-              break 'app_loop
+            let should_quit = update_application(&ui, &mut views, &mut registry, &mut recorder, key);
+            if should_quit {
+              break 'main_loop
             }
           },
           Event::Redraw => {
+            let view = views.current();
             view.window.set_size(ui.buffer_size());
           },
         }
       }
-      if view.window.keep_cursor_visible {
-        let target_cursor = view.mode
-          .preview_selections()
-          .and_then(|ps| ps.first())
-          .unwrap_or(view.buffer.primary_selection())
-          .cursor();
-        view.window.scroll_into_view(&view.buffer.contents, target_cursor);
+      {
+        let view = views.current();
+        if view.window.keep_cursor_visible {
+          let target_cursor = view.mode
+            .preview_selections()
+            .and_then(|ps| ps.first())
+            .unwrap_or(view.buffer.primary_selection())
+            .cursor();
+          view.window.scroll_into_view(&view.buffer.contents, target_cursor);
+        }
+        view.window.keep_cursor_visible = true;
       }
-      view.window.keep_cursor_visible = true;
     }
   });
   if let Err(e) = result {
@@ -56,7 +55,7 @@ fn main() {
   }
 }
 
-fn load_initial_buffer(filename: Option<String>) -> Buffer {
+fn load_buffer(filename: Option<String>) -> Buffer {
   let buffer = match filename {
     Some(filename) => Buffer::new_from_file(filename),
     None => Ok(Buffer::new_scratch()),
@@ -90,4 +89,57 @@ fn load_theme() -> Theme {
     new_line_char: '¬',
     end_of_file_char: 'Ω',
   }
+}
+
+fn update_application(
+  ui: &Ui,
+  views: &mut Views,
+  registry: &mut Registry,
+  recorder: &mut Recorder,
+  key: Key,
+) -> bool {
+  let commands = match key {
+    Key::Char('[') => {
+      views.prev();
+      vec![]
+    },
+    Key::Char(']') => {
+      views.next();
+      vec![]
+    },
+    key => {
+      let view = views.current();
+      view.mode.update(&mut view.buffer, registry, &mut view.window, key)
+    },
+  };
+  for command in commands {
+    match command {
+      UpdateCommand::SwitchMode(next_mode) => {
+        let view = views.current();
+        view.mode = next_mode;
+      },
+      UpdateCommand::SendKeys(keys) => recorder.add(keys),
+      UpdateCommand::Open(filename) => {
+        let found = views.find(&filename);
+        let index = match found {
+          Some(index) => index,
+          None => {
+            views.add(
+              load_buffer(Some(filename)),
+              Window::new(ui.buffer_size()),
+            )
+          }
+        };
+        views.goto(index);
+      },
+      UpdateCommand::Close => {
+        if views.count() == 1 {
+          return true;
+        }
+        views.del(views.current_index());
+      },
+      UpdateCommand::Quit => return true,
+    }
+  }
+  false
 }

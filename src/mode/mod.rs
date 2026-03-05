@@ -1,6 +1,7 @@
 mod filter;
 mod insert;
 mod normal;
+mod open;
 mod pipe;
 mod seek;
 mod split;
@@ -9,6 +10,7 @@ mod target;
 pub use filter::*;
 pub use insert::*;
 pub use normal::*;
+pub use open::*;
 pub use pipe::*;
 pub use seek::*;
 pub use split::*;
@@ -19,8 +21,9 @@ use crate::*;
 pub enum UpdateCommand {
   SwitchMode(Box<dyn Mode>),
   SendKeys(Vec<Key>),
+  Open(String),
+  Close,
   Quit,
-  None,
 }
 
 pub trait Mode {
@@ -30,7 +33,7 @@ pub trait Mode {
     registry: &mut Registry,
     window: &mut Window,
     key: Key,
-  ) -> UpdateCommand;
+  ) -> Vec<UpdateCommand>;
 
   fn status(&self) -> CowStr<'_>;
 

@@ -16,12 +16,12 @@ impl Mode for Insert {
     _registry: &mut Registry,
     _window: &mut Window,
     key: Key,
-  ) -> UpdateCommand {
+  ) -> Vec<UpdateCommand> {
     use crate::key::Key::*;
     match key {
       Esc => {
         buffer.history.commit();
-        return Normal::switch_to();
+        return vec![Normal::switch_to()];
       }
       Backspace => buffer.apply_operations(&[Op::Remove]),
       Tab => buffer.apply_operations(&[Op::InsertStr("  ")]),
@@ -29,7 +29,7 @@ impl Mode for Insert {
       Char(ch) => buffer.apply_operations(&[Op::InsertChar(ch)]),
       _ => {}
     }
-    UpdateCommand::None
+    vec![]
   }
 
   fn status(&self) -> CowStr<'_> {

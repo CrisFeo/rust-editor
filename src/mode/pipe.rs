@@ -21,9 +21,9 @@ impl Mode for Pipe {
     _registry: &mut Registry,
     _window: &mut Window,
     key: Key,
-  ) -> UpdateCommand {
+  ) -> Vec<UpdateCommand> {
     match self.editor.update(key) {
-      MiniEditorCommand::Cancel => return Normal::switch_to(),
+      MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
       MiniEditorCommand::Submit => {
         let results = pipe_selections_thru_script(
           &self.editor.value,
@@ -32,7 +32,7 @@ impl Mode for Pipe {
         );
         let mut results = match results {
           Ok(results) => results,
-          Err(error) => return Normal::switch_to_with_toast(error),
+          Err(error) => return vec![Normal::switch_to_with_toast(error)],
         };
         let mut selections = Vec::with_capacity(results.len());
         for i in 0..results.len() {
@@ -54,12 +54,12 @@ impl Mode for Pipe {
         }
         buffer.history.commit();
         buffer.set_selections(selections);
-        return Normal::switch_to();
+        return vec![Normal::switch_to()];
       },
       MiniEditorCommand::Update => {},
       MiniEditorCommand::None => { },
     }
-    UpdateCommand::None
+    vec![]
   }
 
   fn status(&self) -> CowStr<'_> {

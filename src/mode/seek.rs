@@ -34,10 +34,9 @@ impl Mode for Seek {
     _registry: &mut Registry,
     _window: &mut Window,
     key: Key,
-  ) -> UpdateCommand {
-    let result = self.editor.update(key);
-    match result {
-      MiniEditorCommand::Cancel => return Normal::switch_to(),
+  ) -> Vec<UpdateCommand> {
+    match self.editor.update(key) {
+      MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
       MiniEditorCommand::Update => update_preview(self, buffer),
       MiniEditorCommand::Submit => {
         let command = self.editor.value.to_string();
@@ -49,11 +48,11 @@ impl Mode for Seek {
           buffer.primary_selection = selections.len().saturating_sub(1);
           buffer.set_selections(selections);
         }
-        return Normal::switch_to();
+        return vec![Normal::switch_to()];
       },
       MiniEditorCommand::None => { },
     }
-    UpdateCommand::None
+    vec![]
   }
 
   fn status(&self) -> CowStr<'_> {

@@ -24,12 +24,12 @@ impl Mode for Normal {
     registry: &mut Registry,
     window: &mut Window,
     key: Key,
-  ) -> UpdateCommand {
+  ) -> Vec<UpdateCommand> {
     use crate::key::Key::*;
     self.toast = None;
     match key {
       // Meta actions
-      Char('Q') => return UpdateCommand::Quit,
+      Char('Q') => return vec![UpdateCommand::Quit],
       Char('W') => {
         if buffer.filename.is_some() {
           self.toast = if buffer.save() {
@@ -41,25 +41,27 @@ impl Mode for Normal {
           self.toast = Some("scratch buffers cannot be saved".into());
         }
       }
+      Char('O') => return vec![Open::switch_to()],
+      Char('C') => return vec![UpdateCommand::Close],
       Char(' ') => {
         let name = take_register_target(registry).unwrap_or_else(|| "playback".to_string());
         if let Some(Register::Content(contents)) = registry.get(&name) {
           if let Some(contents) = contents.first() {
             let keys = Key::from_input(contents);
-            return UpdateCommand::SendKeys(keys)
+            return vec![UpdateCommand::SendKeys(keys)];
           }
         }
       },
 
       // Registry actions
-      Char('e') => return Target::switch_to(),
+      Char('e') => return vec![Target::switch_to()],
 
       // Content modifications
       Char('d') => {
         buffer.apply_operations(&[Op::RemoveAll]);
         buffer.history.commit();
       }
-      Char('a') => return mode::Insert::switch_to(),
+      Char('a') => return vec![mode::Insert::switch_to()],
       Char('x') => {
         let name = take_register_target(registry).unwrap_or_else(|| "clipboard".to_string());
         registry.set(&name, Register::Content(copy(buffer)))
@@ -72,7 +74,7 @@ impl Mode for Normal {
       }
       Char('z') => undo(buffer),
       Char('Z') => redo(buffer),
-      Char('r') => return Pipe::switch_to(),
+      Char('r') => return vec![Pipe::switch_to()],
 
       // Anchor movements
       Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
@@ -83,8 +85,8 @@ impl Mode for Normal {
       Char('J') => buffer.apply_operations(&[Op::MoveByLine(1)]),
       Char('K') => buffer.apply_operations(&[Op::MoveByLine(-1)]),
       Char('L') => buffer.apply_operations(&[Op::MoveByChar(1)]),
-      Char('g') => return Seek::switch_to(false),
-      Char('G') => return Seek::switch_to(true),
+      Char('g') => return vec![Seek::switch_to(false)],
+      Char('G') => return vec![Seek::switch_to(true)],
       Char('b') => buffer.apply_operations(&[Op::Swap]),
       Char('n') => buffer.apply_operations(&[Op::Collapse]),
       Char('p') => move_by_window_page(buffer, window, 1),
@@ -111,10 +113,10 @@ impl Mode for Normal {
           .collect();
         buffer.set_selections(selections);
       }
-      Char('s') => return Split::switch_to(false),
-      Char('S') => return Split::switch_to(true),
-      Char('f') => return Filter::switch_to(false),
-      Char('F') => return Filter::switch_to(true),
+      Char('s') => return vec![Split::switch_to(false)],
+      Char('S') => return vec![Split::switch_to(true)],
+      Char('f') => return vec![Filter::switch_to(false)],
+      Char('F') => return vec![Filter::switch_to(true)],
 
       // View controls
       Char('v') => center(buffer, window),
@@ -137,7 +139,7 @@ impl Mode for Normal {
 
       _ => {}
     }
-    UpdateCommand::None
+    vec![]
   }
 
   fn status(&self) -> CowStr<'_> {

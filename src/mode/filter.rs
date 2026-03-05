@@ -33,9 +33,9 @@ impl Mode for Filter {
     _registry: &mut Registry,
     _window: &mut Window,
     key: Key,
-  ) -> UpdateCommand {
+  ) -> Vec<UpdateCommand> {
     match self.editor.update(key) {
-      MiniEditorCommand::Cancel => return Normal::switch_to(),
+      MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
       MiniEditorCommand::Update => update_preview(self, buffer),
       MiniEditorCommand::Submit => {
         let command = self.editor.value.to_string();
@@ -47,11 +47,11 @@ impl Mode for Filter {
           buffer.primary_selection = selections.len().saturating_sub(1);
           buffer.set_selections(selections);
         }
-        return Normal::switch_to();
+        return vec![Normal::switch_to()];
       },
       MiniEditorCommand::None => { },
     }
-    UpdateCommand::None
+    vec![]
   }
 
   fn status(&self) -> CowStr<'_> {

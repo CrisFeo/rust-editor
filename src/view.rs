@@ -6,23 +6,6 @@ pub struct View {
   pub mode: Box<dyn Mode>,
 }
 
-impl View {
-  pub fn update(
-    &mut self,
-    registry: &mut Registry,
-    recorder: &mut Recorder,
-    key: Key,
-  ) -> UpdateCommand {
-    let result = self.mode.update(&mut self.buffer, registry, &mut self.window, key);
-    match result {
-      UpdateCommand::SwitchMode(next_mode) => self.mode = next_mode,
-      UpdateCommand::SendKeys(keys) => recorder.add(keys),
-      x => return x,
-    }
-    UpdateCommand::None
-  }
-}
-
 #[derive(Default)]
 pub struct Views {
   entries: Vec<View>,
@@ -30,8 +13,12 @@ pub struct Views {
 }
 
 impl Views {
-  pub fn current(&mut self) -> Option<&mut View> {
-    self.entries.get_mut(self.selected)
+  pub fn current(&mut self) -> &mut View {
+    self.entries.get_mut(self.selected).expect("should always have at least one view")
+  }
+
+  pub fn current_index(&self) -> usize {
+    self.selected
   }
 
   pub fn add(&mut self, buffer: Buffer, window: Window) -> usize {
@@ -45,12 +32,33 @@ impl Views {
     index
   }
 
+  pub fn del(&mut self, index: usize) {
+    self.entries.remove(index);
+    self.selected %= self.entries.len();
+  }
+
+  pub fn count(&self) -> usize {
+    self.entries.len()
+  }
+
+  pub fn find(&mut self, filename: &str) -> Option<usize> {
+    self.entries
+      .iter()
+      .enumerate()
+      .find(|(_, e)| e.buffer.filename.as_deref() == Some(filename))
+      .map(|(i, _)| i)
+  }
+
+  pub fn goto(&mut self, index: usize) {
+    self.selected = index % self.entries.len();
+  }
+
   pub fn next(&mut self) {
     let current = self.selected % self.entries.len();
     self.selected = current.wrapping_add(1) % self.entries.len();
   }
 
-  pub fn previous(&mut self) {
+  pub fn prev(&mut self) {
     let current = self.selected % self.entries.len();
     self.selected = current.wrapping_sub(1) % self.entries.len();
   }
