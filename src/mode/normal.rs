@@ -41,7 +41,7 @@ impl Mode for Normal {
           self.toast = Some("scratch buffers cannot be saved".into());
         }
       }
-      Char('p') => {
+      Char(' ') => {
         let name = take_register_target(registry).unwrap_or_else(|| "playback".to_string());
         if let Some(Register::Content(contents)) = registry.get(&name) {
           if let Some(contents) = contents.first() {

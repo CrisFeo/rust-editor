@@ -4,7 +4,7 @@
 
 - `Q` exit editor
 - `W` write buffer to file
-- `p` play keys from register (default target: "playback")
+- ` ` play keys from register (default target: "playback")
 
 ## Registry actions
 
