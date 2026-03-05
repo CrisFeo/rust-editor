@@ -1,6 +1,6 @@
 use crate::*;
 use crossterm::event::{
-  read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, MouseEventKind,
+  read, DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyCode, KeyModifiers, MouseEventKind,
 };
 use crossterm::style::{Print, ResetColor, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::ClearType;
@@ -37,6 +37,11 @@ enum Cell {
   Unknown,
   Unchanged,
   Changed(char, Option<Color>, Option<Color>),
+}
+
+pub enum Event {
+  Redraw,
+  Key(Key),
 }
 
 pub struct Screen {
@@ -89,36 +94,58 @@ impl Screen {
     (self.width, self.height)
   }
 
-  pub fn poll(&mut self) -> Key {
+  pub fn poll(&mut self) -> Event {
     loop {
-      match read().expect("should read input") {
-        Event::Mouse(event) => match event.kind {
-          MouseEventKind::ScrollUp => return Key::Up,
-          MouseEventKind::ScrollDown => return Key::Down,
-          MouseEventKind::ScrollLeft => return Key::Left,
-          MouseEventKind::ScrollRight => return Key::Right,
+      let event = read().expect("should read input");
+      match event {
+        CrosstermEvent::Mouse(event) => match event.kind {
+          MouseEventKind::ScrollUp => return Event::Key(Key::Up),
+          MouseEventKind::ScrollDown => return Event::Key(Key::Down),
+          MouseEventKind::ScrollLeft => return Event::Key(Key::Left),
+          MouseEventKind::ScrollRight => return Event::Key(Key::Right),
           _ => {}
         },
-        Event::Key(event) => match event.code {
-          KeyCode::Backspace => return Key::Backspace,
-          KeyCode::Enter => return Key::Enter,
-          KeyCode::Left => return Key::Left,
-          KeyCode::Right => return Key::Right,
-          KeyCode::Up => return Key::Up,
-          KeyCode::Down => return Key::Down,
-          KeyCode::Tab => return Key::Tab,
-          KeyCode::Char(c) => return Key::Char(c),
-          KeyCode::Esc => return Key::Esc,
+        CrosstermEvent::Key(event) => match event.code {
+          KeyCode::Backspace => return Event::Key(Key::Backspace),
+          KeyCode::Enter => return Event::Key(Key::Enter),
+          KeyCode::Left => return Event::Key(Key::Left),
+          KeyCode::Right => return Event::Key(Key::Right),
+          KeyCode::Up => return Event::Key(Key::Up),
+          KeyCode::Down => return Event::Key(Key::Down),
+          KeyCode::Tab => return Event::Key(Key::Tab),
+          KeyCode::Esc => return Event::Key(Key::Esc),
+          KeyCode::Char('z') if event.modifiers & KeyModifiers::CONTROL == KeyModifiers::CONTROL => {
+            self.suspend();
+            return Event::Redraw;
+          },
+          KeyCode::Char(c) => return Event::Key(Key::Char(c)),
           _ => {}
         },
-        Event::Resize(width, height) => {
+        CrosstermEvent::Resize(width, height) => {
           self.width = width as usize;
           self.height = height as usize;
           self.buffer.resize(self.width * self.height, Cell::Unknown);
+          return Event::Redraw;
         }
         _ => {}
       }
     }
+  }
+
+  pub fn suspend(&mut self) {
+    execute!(self.output, DisableMouseCapture).expect("should disable mouse");
+    execute!(self.output, cursor::Show).expect("should show cursor");
+    terminal::disable_raw_mode().expect("should disable raw mode");
+    execute!(self.output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");
+    unsafe { libc::raise(libc::SIGTSTP) };
+    execute!(self.output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
+    terminal::enable_raw_mode().expect("should disable raw mode");
+    execute!(self.output, cursor::Hide).expect("should hide cursor");
+    execute!(self.output, EnableMouseCapture).expect("should enable mouse");
+    let size = terminal::window_size().expect("should retrieve size after resume");
+    self.width = size.columns as usize;
+    self.height = size.rows as usize;
+    self.buffer.resize(self.width * self.height, Cell::Unknown);
   }
 
   pub fn clear(&mut self) {

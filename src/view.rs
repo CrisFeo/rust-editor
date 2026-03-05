@@ -29,7 +29,7 @@ impl View {
     (width, height.saturating_sub(1))
   }
 
-  pub fn poll(&mut self) -> Key {
+  pub fn poll(&mut self) -> Event {
     self.screen.poll()
   }
 

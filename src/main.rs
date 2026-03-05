@@ -45,10 +45,10 @@ fn main() {
     let mut macro_keys: Option<VecDeque<Key>> = None;
     loop {
       view.render(mode.as_ref(), &buffer, &window);
-      let key = {
+      let event = {
         if let Some(ref mut keys) = macro_keys {
           if let Some(key) = keys.pop_front() {
-            key
+            Event::Key(key)
           } else {
             view.poll()
           }
@@ -56,20 +56,25 @@ fn main() {
           view.poll()
         }
       };
-      let result = mode.update(&mut buffer, &mut registry, &mut window, key);
-      match result {
-        UpdateCommand::SwitchMode(next_mode) => mode = next_mode,
-        UpdateCommand::SendKeys(keys) => {
-          if let Some(ref mut macro_keys) = macro_keys {
-            for key in keys.iter().rev() {
-              macro_keys.push_front(*key);
-            }
-          } else {
-            macro_keys = Some(keys.into());
+      match event {
+        Event::Key(key) => {
+          let result = mode.update(&mut buffer, &mut registry, &mut window, key);
+          match result {
+            UpdateCommand::SwitchMode(next_mode) => mode = next_mode,
+            UpdateCommand::SendKeys(keys) => {
+              if let Some(ref mut macro_keys) = macro_keys {
+                for key in keys.iter().rev() {
+                  macro_keys.push_front(*key);
+                }
+              } else {
+                macro_keys = Some(keys.into());
+              }
+            },
+            UpdateCommand::None => {}
+            UpdateCommand::Quit => break,
           }
         },
-        UpdateCommand::None => {}
-        UpdateCommand::Quit => break,
+        Event::Redraw => {},
       }
       window.set_size(view.buffer_size());
       if window.keep_cursor_visible {
