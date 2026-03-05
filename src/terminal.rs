@@ -44,7 +44,7 @@ pub enum Event {
   Key(Key),
 }
 
-pub struct Screen {
+pub struct Terminal {
   _held_stderr: Hold,
   output: BufWriter<Stdout>,
   buffer: Vec<Cell>,
@@ -55,7 +55,7 @@ pub struct Screen {
   current_fg: Option<Color>,
 }
 
-impl Screen {
+impl Terminal {
   pub fn create() -> Self {
     let held_stderr = gag::Hold::stderr().expect("should gag stderr");
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
@@ -233,7 +233,7 @@ impl Screen {
   }
 }
 
-impl Drop for Screen {
+impl Drop for Terminal {
   fn drop(&mut self) {
     execute!(self.output, DisableMouseCapture).expect("should disable mouse");
     execute!(self.output, cursor::Show).expect("should show cursor");

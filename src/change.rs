@@ -46,9 +46,6 @@ impl Changes {
     let mut selections: Vec<Selection> = Vec::new();
     for change in self.0.iter() {
       let selection = change.apply(contents);
-      for selection in selections.iter_mut() {
-        selection.adjust(contents, Some(change));
-      }
       selections.push(selection);
       merge_overlapping_selections(&mut selections);
     }

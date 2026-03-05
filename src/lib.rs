@@ -1,28 +1,30 @@
 mod buffer;
 mod change;
 mod color;
-mod recorder;
 mod history;
 mod key;
 mod mode;
+mod recorder;
 mod regex;
 mod registry;
-mod screen;
 mod selection;
+mod terminal;
+mod ui;
 mod view;
 mod window;
 
 pub use buffer::*;
 pub use change::*;
 pub use color::*;
-pub use recorder::*;
 pub use history::*;
 pub use key::*;
 pub use mode::*;
+pub use recorder::*;
 pub use regex::*;
 pub use registry::*;
-pub use screen::*;
 pub use selection::*;
+pub use terminal::*;
+pub use ui::*;
 pub use view::*;
 pub use window::*;
 

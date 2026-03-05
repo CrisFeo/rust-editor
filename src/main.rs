@@ -6,50 +6,49 @@ fn main() {
   let result = catch_unwind(|| {
     let filename = std::env::args().nth(1);
     let theme = load_theme();
-    let mut view = View::create(theme);
-    let mut buffer = load_initial_buffer(filename);
-    let mut window = Window::new(view.buffer_size());
+    let mut ui = Ui::create(theme);
+    let mut views = Views::default();
     let mut registry = Registry::default();
     let mut recorder = Recorder::default();
-    let mut mode: Box<dyn Mode> = Box::new(Normal::default());
+    views.add(
+      load_initial_buffer(filename),
+      Window::new(ui.buffer_size()),
+    );
     'app_loop: loop {
+      let Some(view) = views.current() else {
+        break 'app_loop;
+      };
       if let Some(keys) = recorder.take() {
         for key in keys {
-          let result = mode.update(&mut buffer, &mut registry, &mut window, key);
-          match result {
-            UpdateCommand::SwitchMode(next_mode) => mode = next_mode,
-            UpdateCommand::SendKeys(keys) => recorder.add(keys),
-            UpdateCommand::None => {}
-            UpdateCommand::Quit => break 'app_loop,
+          let command = view.update(&mut registry, &mut recorder, key);
+          if let UpdateCommand::Quit = command {
+            break 'app_loop
           }
         }
       } else {
-        view.render(mode.as_ref(), &buffer, &window);
-        let event = view.poll();
+        ui.render(view);
+        let event = ui.poll();
         match event {
           Event::Key(key) => {
-            let result = mode.update(&mut buffer, &mut registry, &mut window, key);
-            match result {
-              UpdateCommand::SwitchMode(next_mode) => mode = next_mode,
-              UpdateCommand::SendKeys(keys) => recorder.add(keys),
-              UpdateCommand::None => {}
-              UpdateCommand::Quit => break 'app_loop,
+            let command = view.update(&mut registry, &mut recorder, key);
+            if let UpdateCommand::Quit = command {
+              break 'app_loop
             }
           },
           Event::Redraw => {
-            window.set_size(view.buffer_size());
+            view.window.set_size(ui.buffer_size());
           },
         }
       }
-      if window.keep_cursor_visible {
-        let target_cursor = mode
+      if view.window.keep_cursor_visible {
+        let target_cursor = view.mode
           .preview_selections()
           .and_then(|ps| ps.first())
-          .unwrap_or(buffer.primary_selection())
+          .unwrap_or(view.buffer.primary_selection())
           .cursor();
-        window.scroll_into_view(&buffer.contents, target_cursor);
+        view.window.scroll_into_view(&view.buffer.contents, target_cursor);
       }
-      window.keep_cursor_visible = true;
+      view.window.keep_cursor_visible = true;
     }
   });
   if let Err(e) = result {
