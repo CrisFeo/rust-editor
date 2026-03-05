@@ -21,4 +21,41 @@
 - [ ] add help/quickref page on `?`
 - [ ] macros: "history" buffer to copy from
 - [ ] macros: early exit on errors?
+- [ ] implement shared mini editor for commands
+  ```
+  struct MiniEditorCommand {
+    Cancel,
+    Update,
+    Submit,
+  }
 
+  struct MiniEditor {
+    value: String,
+  }
+
+  impl MiniEditor {
+    fn update(&mut self, key: Key) -> MiniEditorCommand {
+      use MiniEditorCommand::*;
+      use crate::key::Key::*;
+      match key {
+        Esc => Cancel,
+        Backspace => {
+          let len = self.command.len_chars();
+          if len > 0 {
+            self.command.remove(len - 1..len);
+            Update
+          } else {
+            None
+          }
+        },
+        Char(ch) => {
+          let len = self.command.len_chars();
+          self.command.insert_char(len, ch);
+          Update
+        },
+        Enter => Submit,
+        _ => None,
+      }
+    }
+  }
+  ```
