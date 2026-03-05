@@ -7,17 +7,14 @@
 - [-] bug: status foreground flicker
 - [x] bug: crash on command overflow
 - [x] macros: initial implementation
-- [ ] multibuffer support
-  - open buffer
-  - close buffer
-  - reload buffer from disk
-  - readonly buffers?
-    - could just copy to tmpfile?
-  - scratch buffers?
-    - could just use tmpfiles?
+- [x] ctrl-z (suspend) support
+- [x] add interactive command support to pipe mode
+- [x] multibuffer: basic view support
+- [ ] multibuffer: open file in buffer
+- [ ] multibuffer: close buffer
+- [ ] multibuffer: reload buffer from disk
 - [ ] fast repeat last command on enter
 - [ ] vimgrep argument support
-- [ ] ctrl-z (suspend) support
 - [ ] add help/quickref page on `?`
 - [ ] macros: "history" buffer to copy from
 - [ ] macros: early exit on errors?

@@ -4,7 +4,7 @@
 
 - `Q` exit editor
 - `W` write buffer to file
-- `m` play macro (default target: "macro")
+- `p` play keys from register (default target: "playback")
 
 ## Registry actions
 
@@ -14,8 +14,8 @@
 
 - `d` delete selection
 - `a` insert before active anchor (insert mode)
-- `x` copy selections to register (default target: "clipboard")
-- `X` paste selections from register (default target: "clipboard")
+- `x` store selection content to register (default target: "clipboard")
+- `X` load selection content from register (default target: "clipboard")
 - `z` undo
 - `Z` redo
 - `r` pipe each selection through a command (pipe mode)
