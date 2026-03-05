@@ -83,6 +83,7 @@ fn pipe_selections_thru_script(
   contents: &Rope,
   selections: &[Selection],
 ) -> Result<Vec<(Selection, String)>, String> {
+  leave_controlled_terminal(&mut std::io::stdout(), true);
   let mut command = Command::new("sh");
   command.arg("-c");
   command.arg(script.to_string());
@@ -111,5 +112,6 @@ fn pipe_selections_thru_script(
     };
     results.push((*selection, output));
   }
+  enter_controlled_terminal(&mut std::io::stdout());
   Ok(results)
 }

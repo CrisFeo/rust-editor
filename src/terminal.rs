@@ -59,17 +59,12 @@ impl Terminal {
   pub fn create() -> Self {
     let held_stderr = gag::Hold::stderr().expect("should gag stderr");
     let mut output = BufWriter::with_capacity(1 << 14, io::stdout());
-    execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
-    terminal::enable_raw_mode().expect("should enable raw mode");
+    enter_controlled_terminal(&mut output);
     queue!(output, terminal::Clear(ClearType::All)).expect("should clear screen");
-    queue!(output, cursor::Hide).expect("should hide cursor");
     queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor when setting up");
-    queue!(output, ResetColor)
-      .expect("should reset colors when setting up");
+    queue!(output, ResetColor).expect("should reset colors when setting up");
     queue!(output, EnableMouseCapture).expect("should enable mouse when setting up");
-    output
-      .flush()
-      .expect("should flush queued output when setting up");
+    output.flush().expect("should flush queued output when setting up");
     let (width, height) = {
       let (width, height) = terminal::size().expect("should retrieve terminal size");
       (width as usize, height as usize)
@@ -133,15 +128,9 @@ impl Terminal {
   }
 
   pub fn suspend(&mut self) {
-    execute!(self.output, DisableMouseCapture).expect("should disable mouse");
-    execute!(self.output, cursor::Show).expect("should show cursor");
-    terminal::disable_raw_mode().expect("should disable raw mode");
-    execute!(self.output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");
+    leave_controlled_terminal(&mut self.output, false);
     unsafe { libc::raise(libc::SIGTSTP) };
-    execute!(self.output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
-    terminal::enable_raw_mode().expect("should disable raw mode");
-    execute!(self.output, cursor::Hide).expect("should hide cursor");
-    execute!(self.output, EnableMouseCapture).expect("should enable mouse");
+    enter_controlled_terminal(&mut self.output);
     let size = terminal::window_size().expect("should retrieve size after resume");
     self.width = size.columns as usize;
     self.height = size.rows as usize;
@@ -226,18 +215,29 @@ impl Terminal {
         }
       }
     }
-    self
-      .output
-      .flush()
-      .expect("should flush queued output when presenting");
+    self.output.flush().expect("should flush queued output when presenting");
   }
 }
 
 impl Drop for Terminal {
   fn drop(&mut self) {
-    execute!(self.output, DisableMouseCapture).expect("should disable mouse");
-    execute!(self.output, cursor::Show).expect("should show cursor");
-    terminal::disable_raw_mode().expect("should disable raw mode");
-    execute!(self.output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");
+    leave_controlled_terminal(&mut self.output, false);
+    self.output.flush().expect("should flush queued output when dropping");
   }
+}
+
+pub fn enter_controlled_terminal(output: &mut impl std::io::Write) {
+  terminal::enable_raw_mode().expect("should enable raw mode");
+  execute!(output, terminal::EnterAlternateScreen).expect("should enter alternate screen");
+  execute!(output, cursor::Hide).expect("should hide cursor");
+  execute!(output, EnableMouseCapture).expect("should enable mouse");
+}
+
+pub fn leave_controlled_terminal(output: &mut impl std::io::Write, stay_on_alt_screen: bool) {
+  execute!(output, DisableMouseCapture).expect("should disable mouse");
+  execute!(output, cursor::Show).expect("should show cursor");
+  if !stay_on_alt_screen {
+    execute!(output, terminal::LeaveAlternateScreen).expect("should leave alternate screen");
+  }
+  terminal::disable_raw_mode().expect("should disable raw mode");
 }
