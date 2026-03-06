@@ -11,8 +11,8 @@
 - [x] add interactive command support to pipe mode
 - [x] multibuffer: basic view support
 - [x] implement shared mini editor for commands
-- [ ] multibuffer: open file in buffer
-- [ ] multibuffer: close buffer
+- [x] multibuffer: open file in buffer
+- [x] multibuffer: close buffer
 - [ ] multibuffer: reload buffer from disk
 - [ ] fast repeat last command on enter
 - [ ] vimgrep argument support

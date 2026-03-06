@@ -98,20 +98,13 @@ fn update_application(
   recorder: &mut Recorder,
   key: Key,
 ) -> bool {
-  let commands = match key {
-    Key::Char('[') => {
-      views.prev();
-      vec![]
-    },
-    Key::Char(']') => {
-      views.next();
-      vec![]
-    },
-    key => {
-      let view = views.current();
-      view.mode.update(&mut view.buffer, registry, &mut view.window, key)
-    },
-  };
+  let view = views.current();
+  let commands = view.mode.update(
+    &mut view.buffer,
+    registry,
+    &mut view.window,
+    key,
+  );
   for command in commands {
     match command {
       UpdateCommand::SwitchMode(next_mode) => {
@@ -119,6 +112,8 @@ fn update_application(
         view.mode = next_mode;
       },
       UpdateCommand::SendKeys(keys) => recorder.add(keys),
+      UpdateCommand::ViewPrev => views.prev(),
+      UpdateCommand::ViewNext => views.next(),
       UpdateCommand::Open(filename) => {
         let found = views.find(&filename);
         let index = match found {

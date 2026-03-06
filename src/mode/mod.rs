@@ -21,6 +21,8 @@ use crate::*;
 pub enum UpdateCommand {
   SwitchMode(Box<dyn Mode>),
   SendKeys(Vec<Key>),
+  ViewPrev,
+  ViewNext,
   Open(String),
   Close,
   Quit,

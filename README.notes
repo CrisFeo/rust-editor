@@ -4,12 +4,11 @@
 
 - `Q` exit editor
 - `W` write buffer to file
+- '[' switch to previous buffer view
+- ']' switch to next buffer view
 - `O` open file by name (open mode)
 - `C` close current buffer
 - ` ` play keys from register (default target: "playback")
-
-## Registry actions
-
 - `e` set target register for next command
 
 ## Content Modifications

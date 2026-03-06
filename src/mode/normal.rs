@@ -41,6 +41,8 @@ impl Mode for Normal {
           self.toast = Some("scratch buffers cannot be saved".into());
         }
       }
+      Char('[') => return vec![UpdateCommand::ViewPrev],
+      Char(']') => return vec![UpdateCommand::ViewNext],
       Char('O') => return vec![Open::switch_to()],
       Char('C') => return vec![UpdateCommand::Close],
       Char(' ') => {
@@ -52,8 +54,6 @@ impl Mode for Normal {
           }
         }
       },
-
-      // Registry actions
       Char('e') => return vec![Target::switch_to()],
 
       // Content modifications
