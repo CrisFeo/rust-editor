@@ -27,7 +27,9 @@ impl Regex {
     range_end: usize,
   ) -> impl Iterator<Item = (usize, usize)> + 'a {
     let mut input = Input::new(contents);
-    input.set_range(range_start..=range_end);
+    let start = contents.char_to_byte(range_start);
+    let end = contents.char_to_byte(range_end);
+    input.set_range(start..=end);
     self.0.find_iter(input).map(|m| {
       let start = contents.byte_to_char(m.start());
       let end = contents.byte_to_char(m.end().min(contents.len_chars()));
