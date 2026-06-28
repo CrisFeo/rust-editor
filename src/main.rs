@@ -115,17 +115,22 @@ fn update_application(
       UpdateCommand::ViewPrev => views.prev(),
       UpdateCommand::ViewNext => views.next(),
       UpdateCommand::Open(filename) => {
-        let found = views.find(&filename);
-        let index = match found {
-          Some(index) => index,
-          None => {
-            views.add(
-              load_buffer(Some(filename)),
-              Window::new(ui.buffer_size()),
-            )
-          }
-        };
-        views.goto(index);
+        if filename.is_empty() {
+          // TODO handle the error here with a toast
+          views.current().buffer.reload_from_file().unwrap()
+        } else {
+          let found = views.find(&filename);
+          let index = match found {
+            Some(index) => index,
+            None => {
+              views.add(
+                load_buffer(Some(filename)),
+                Window::new(ui.buffer_size()),
+              )
+            }
+          };
+          views.goto(index);
+        }
       },
       UpdateCommand::Close => {
         if views.count() == 1 {

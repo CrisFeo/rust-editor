@@ -13,9 +13,13 @@
 - [x] implement shared mini editor for commands
 - [x] multibuffer: open file in buffer
 - [x] multibuffer: close buffer
-- [ ] multibuffer: reload buffer from disk
+- [x] multibuffer: reload buffer from disk
+- [ ] open tmp buffer with register content
 - [ ] fast repeat last command on enter
 - [ ] vimgrep argument support
 - [ ] add help/quickref page on `?`
 - [ ] macros: "history" buffer to copy from
 - [ ] macros: early exit on errors?
+- [ ] move toast up to application level
+  - update modal toasts to use command
+  - make view save/load errors use toast

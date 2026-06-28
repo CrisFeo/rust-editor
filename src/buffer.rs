@@ -41,6 +41,23 @@ impl Buffer {
     })
   }
 
+  pub fn reload_from_file(&mut self) -> Result<()> {
+    let Some(filename) = &self.filename else {
+      return Ok(());
+    };
+    let file = OpenOptions::new().read(true).open(filename);
+    self.contents = match file {
+      Ok(file) => {
+        let reader = BufReader::new(file);
+        Rope::from_reader(reader)
+      }
+      Err(e) if e.kind() == ErrorKind::NotFound => Ok(Rope::new()),
+      Err(e) => Err(e),
+    }?;
+    self.selections = vec![Selection::new_at_end(0, 0)];
+    Ok(())
+  }
+
   pub fn save(&self) -> bool {
     if let Some(filename) = &self.filename {
       let file = match File::create(filename) {
