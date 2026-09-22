@@ -14,7 +14,10 @@ pub struct Views {
 
 impl Views {
   pub fn current(&mut self) -> &mut View {
-    self.entries.get_mut(self.selected).expect("should always have at least one view")
+    self
+      .entries
+      .get_mut(self.selected)
+      .expect("should always have at least one view")
   }
 
   pub fn current_index(&self) -> usize {
@@ -26,7 +29,7 @@ impl Views {
     let view = View {
       buffer,
       window,
-      mode: Box::new(Normal::default()),
+      mode: Box::new(Normal),
     };
     self.entries.push(view);
     index
@@ -42,7 +45,8 @@ impl Views {
   }
 
   pub fn find(&mut self, filename: &str) -> Option<usize> {
-    self.entries
+    self
+      .entries
       .iter()
       .enumerate()
       .find(|(_, e)| e.buffer.filename.as_deref() == Some(filename))
@@ -63,4 +67,3 @@ impl Views {
     self.selected = current.wrapping_sub(1) % self.entries.len();
   }
 }
-

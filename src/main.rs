@@ -10,41 +10,59 @@ fn main() {
     let mut views = Views::default();
     let mut registry = Registry::default();
     let mut recorder = Recorder::default();
+    let mut toast = Toast::default();
     views.add(load_buffer(filename), Window::new(ui.buffer_size()));
     'main_loop: loop {
       if let Some(keys) = recorder.take() {
         for key in keys {
-          let should_quit = update_application(&ui, &mut views, &mut registry, &mut recorder, key);
+          let should_quit = update_application(
+            &ui,
+            &mut toast,
+            &mut views,
+            &mut registry,
+            &mut recorder,
+            key,
+          );
           if should_quit {
-            break 'main_loop
+            break 'main_loop;
           }
         }
       } else {
         let view = views.current();
-        ui.render(view);
+        ui.render(&toast, view);
         let event = ui.poll();
         match event {
           Event::Key(key) => {
-            let should_quit = update_application(&ui, &mut views, &mut registry, &mut recorder, key);
+            let should_quit = update_application(
+              &ui,
+              &mut toast,
+              &mut views,
+              &mut registry,
+              &mut recorder,
+              key,
+            );
             if should_quit {
-              break 'main_loop
+              break 'main_loop;
             }
-          },
+          }
           Event::Redraw => {
             let view = views.current();
             view.window.set_size(ui.buffer_size());
-          },
+          }
         }
       }
       {
         let view = views.current();
         if view.window.keep_cursor_visible {
-          let target_cursor = view.mode
+          let target_cursor = view
+            .mode
             .preview_selections()
             .and_then(|ps| ps.first())
             .unwrap_or(view.buffer.primary_selection())
             .cursor();
-          view.window.scroll_into_view(&view.buffer.contents, target_cursor);
+          view
+            .window
+            .scroll_into_view(&view.buffer.contents, target_cursor);
         }
         view.window.keep_cursor_visible = true;
       }
@@ -93,16 +111,21 @@ fn load_theme() -> Theme {
 
 fn update_application(
   ui: &Ui,
+  toast: &mut Toast,
   views: &mut Views,
   registry: &mut Registry,
   recorder: &mut Recorder,
   key: Key,
 ) -> bool {
+  toast.status = None;
   let view = views.current();
   let commands = view.mode.update(
-    &mut view.buffer,
-    registry,
-    &mut view.window,
+    ModeContext {
+      toast,
+      buffer: &mut view.buffer,
+      window: &mut view.window,
+      registry,
+    },
     key,
   );
   for command in commands {
@@ -110,34 +133,30 @@ fn update_application(
       UpdateCommand::SwitchMode(next_mode) => {
         let view = views.current();
         view.mode = next_mode;
-      },
+      }
       UpdateCommand::SendKeys(keys) => recorder.add(keys),
       UpdateCommand::ViewPrev => views.prev(),
       UpdateCommand::ViewNext => views.next(),
       UpdateCommand::Open(filename) => {
         if filename.is_empty() {
-          // TODO handle the error here with a toast
-          views.current().buffer.reload_from_file().unwrap()
+          if views.current().buffer.reload_from_file().is_err() {
+            toast.status = Some("could not write file".into());
+          }
         } else {
           let found = views.find(&filename);
           let index = match found {
             Some(index) => index,
-            None => {
-              views.add(
-                load_buffer(Some(filename)),
-                Window::new(ui.buffer_size()),
-              )
-            }
+            None => views.add(load_buffer(Some(filename)), Window::new(ui.buffer_size())),
           };
           views.goto(index);
         }
-      },
+      }
       UpdateCommand::Close => {
         if views.count() == 1 {
           return true;
         }
         views.del(views.current_index());
-      },
+      }
       UpdateCommand::Quit => return true,
     }
   }

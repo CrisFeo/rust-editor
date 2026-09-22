@@ -1,6 +1,25 @@
 use crate::*;
 use ropey::Rope;
 
+const HELP_TEXT: &str = "
+`h` move active active anchor backward to match
+`l` move active active anchor forward to match
+";
+
+mode!(
+  SeekDirection,
+  "seek (choose direction) ",
+  HELP_TEXT,
+  |key, _ctx| {
+    use crate::Key::*;
+    match key {
+      Char('h') => vec![Seek::switch_to(true)],
+      Char('l') => vec![Seek::switch_to(false)],
+      _ => vec![Normal::switch_to()],
+    }
+  }
+);
+
 #[derive(Debug, Clone)]
 enum ModeResult {
   Empty,
@@ -28,29 +47,23 @@ impl Seek {
 }
 
 impl Mode for Seek {
-  fn update(
-    &mut self,
-    buffer: &mut Buffer,
-    _registry: &mut Registry,
-    _window: &mut Window,
-    key: Key,
-  ) -> Vec<UpdateCommand> {
+  fn update(&mut self, ctx: ModeContext, key: Key) -> Vec<UpdateCommand> {
     match self.editor.update(key) {
       MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
-      MiniEditorCommand::Update => update_preview(self, buffer),
+      MiniEditorCommand::Update => update_preview(self, ctx.buffer),
       MiniEditorCommand::Submit => {
         let command = self.editor.value.to_string();
         let result = match self.reverse {
-          true => reverse(&buffer.contents, &buffer.selections, &command),
-          false => forward(&buffer.contents, &buffer.selections, &command),
+          true => reverse(&ctx.buffer.contents, &ctx.buffer.selections, &command),
+          false => forward(&ctx.buffer.contents, &ctx.buffer.selections, &command),
         };
         if let ModeResult::Ok(selections) = result {
-          buffer.primary_selection = selections.len().saturating_sub(1);
-          buffer.set_selections(selections);
+          ctx.buffer.primary_selection = selections.len().saturating_sub(1);
+          ctx.buffer.set_selections(selections);
         }
         return vec![Normal::switch_to()];
-      },
-      MiniEditorCommand::None => { },
+      }
+      MiniEditorCommand::None => {}
     }
     vec![]
   }
@@ -127,7 +140,7 @@ fn reverse(contents: &Rope, selections: &[Selection], pattern: &str) -> ModeResu
   for selection in selections.iter() {
     // end the search a character before the active anchor to allow seeking to
     // the previous instance of the character under the cursor
-    let end = selection.cursor().saturating_sub(1).max(0);
+    let end = selection.cursor().saturating_sub(1);
     let result = regex.find(contents, 0, end).last();
     let new_selection = match result {
       Some((start, end)) => {

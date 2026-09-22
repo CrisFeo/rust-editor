@@ -7,7 +7,7 @@ pub struct Recorder {
 }
 
 impl Recorder {
-  pub fn take(&mut self) -> Option<impl Iterator<Item=Key>> {
+  pub fn take(&mut self) -> Option<impl Iterator<Item = Key>> {
     let keys = self.keys.take()?;
     Some(keys.into_iter())
   }
@@ -21,5 +21,4 @@ impl Recorder {
       self.keys = Some(keys.into());
     }
   }
-
 }

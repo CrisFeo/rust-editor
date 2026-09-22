@@ -1,172 +1,106 @@
 use crate::*;
 
-#[derive(Default)]
-pub struct Normal {
-  toast: Option<String>,
-}
+const HELP_TEXT: &str = "
+`q` switch to meta mode
+`v` switch to view mode
 
-impl Normal {
-  pub fn switch_to() -> UpdateCommand {
-    UpdateCommand::SwitchMode(Box::new(Self::default()))
-  }
+`d` delete selection
+`a` insert before active anchor (insert mode)
+`x` store selection content to register (default target: 'clipboard')
+`X` load selection content from register (default target: 'clipboard')
+`z` undo
+`Z` redo
+`r` pipe each selection through a command (pipe mode)
 
-  pub fn switch_to_with_toast(toast: impl Into<String>) -> UpdateCommand {
-    UpdateCommand::SwitchMode(Box::new(Self {
-      toast: Some(toast.into()),
-    }))
-  }
-}
+`h` move active anchor left
+`j` move active anchor down
+`k` move active anchor up
+`l` move active anchor right
+`g` move current cursor to matching regex (seek mode)
+`b` swap active and passive anchor
+`n` collapse selection to active anchor
 
-impl Mode for Normal {
-  fn update(
-    &mut self,
-    buffer: &mut Buffer,
-    registry: &mut Registry,
-    window: &mut Window,
-    key: Key,
-  ) -> Vec<UpdateCommand> {
-    use crate::key::Key::*;
-    self.toast = None;
-    match key {
-      // Meta actions
-      Char('Q') => return vec![UpdateCommand::Quit],
-      Char('W') => {
-        if buffer.filename.is_some() {
-          self.toast = if buffer.save() {
-            Some("file saved!".into())
-          } else {
-            Some("error: could not save file".into())
-          };
-        } else {
-          self.toast = Some("scratch buffers cannot be saved".into());
-        }
-      }
-      Char('[') => return vec![UpdateCommand::ViewPrev],
-      Char(']') => return vec![UpdateCommand::ViewNext],
-      Char('O') => return vec![Open::switch_to()],
-      Char('C') => return vec![UpdateCommand::Close],
-      Char(' ') => {
-        let name = take_register_target(registry).unwrap_or_else(|| "playback".to_string());
-        if let Some(Register::Content(contents)) = registry.get(&name) {
-          if let Some(contents) = contents.first() {
-            let keys = Key::from_input(contents);
-            return vec![UpdateCommand::SendKeys(keys)];
-          }
-        }
-      },
-      Char('e') => return vec![Target::switch_to()],
+`u` select entire buffer
+`t` make next selection primary
+`T` make previous selection primary
+`y` drop primary selection
+`Y` drop all selections besides primary
+`s` split selections (split mode)
+`f` filter selection (filter mode)
+";
 
-      // Content modifications
-      Char('d') => {
-        buffer.apply_operations(&[Op::RemoveAll]);
-        buffer.history.commit();
-      }
-      Char('a') => return vec![mode::Insert::switch_to()],
-      Char('x') => {
-        let name = take_register_target(registry).unwrap_or_else(|| "clipboard".to_string());
-        registry.set(&name, Register::Content(copy(buffer)))
-      }
-      Char('X') => {
-        let name = take_register_target(registry).unwrap_or_else(|| "clipboard".to_string());
-        if let Some(Register::Content(contents)) = registry.get(&name) {
-          paste(buffer, contents);
-        }
-      }
-      Char('z') => undo(buffer),
-      Char('Z') => redo(buffer),
-      Char('r') => return vec![Pipe::switch_to()],
+mode!(Normal, "normal", HELP_TEXT, |key, ctx: ModeContext| {
+  use crate::key::Key::*;
+  match key {
+    // Meta actions
+    Char('q') => return vec![Meta::switch_to()],
+    Char('v') => return vec![Viewport::switch_to()],
 
-      // Anchor movements
-      Char('h') => buffer.apply_operations(&[Op::MoveByChar(-1), Op::Collapse]),
-      Char('j') => buffer.apply_operations(&[Op::MoveByLine(1), Op::Collapse]),
-      Char('k') => buffer.apply_operations(&[Op::MoveByLine(-1), Op::Collapse]),
-      Char('l') => buffer.apply_operations(&[Op::MoveByChar(1), Op::Collapse]),
-      Char('H') => buffer.apply_operations(&[Op::MoveByChar(-1)]),
-      Char('J') => buffer.apply_operations(&[Op::MoveByLine(1)]),
-      Char('K') => buffer.apply_operations(&[Op::MoveByLine(-1)]),
-      Char('L') => buffer.apply_operations(&[Op::MoveByChar(1)]),
-      Char('g') => return vec![Seek::switch_to(false)],
-      Char('G') => return vec![Seek::switch_to(true)],
-      Char('b') => buffer.apply_operations(&[Op::Swap]),
-      Char('n') => buffer.apply_operations(&[Op::Collapse]),
-      Char('p') => move_by_window_page(buffer, window, 1),
-      Char('P') => move_by_window_page(buffer, window, -1),
-
-      // Selection manipulation
-      Char('u') => {
-        buffer.set_selections(vec![Selection::new_at_end(0, buffer.contents.len_chars())])
-      }
-      Char('t') => {
-        buffer.primary_selection = wrap_add(buffer.selections.len(), buffer.primary_selection, 1)
-      }
-      Char('T') => {
-        buffer.primary_selection = wrap_add(buffer.selections.len(), buffer.primary_selection, -1);
-      }
-      Char('y') => buffer.set_selections(vec![*buffer.primary_selection()]),
-      Char('Y') => {
-        let selections = buffer
-          .selections
-          .iter()
-          .enumerate()
-          .filter(|&(i, _)| i != buffer.primary_selection)
-          .map(|(_, &v)| v)
-          .collect();
-        buffer.set_selections(selections);
-      }
-      Char('s') => return vec![Split::switch_to(false)],
-      Char('S') => return vec![Split::switch_to(true)],
-      Char('f') => return vec![Filter::switch_to(false)],
-      Char('F') => return vec![Filter::switch_to(true)],
-
-      // View controls
-      Char('v') => center(buffer, window),
-      Up => {
-        window.keep_cursor_visible = false;
-        window.scroll_top = window.scroll_top.saturating_sub(1);
-      }
-      Down => {
-        window.keep_cursor_visible = false;
-        window.scroll_top = window.scroll_top.saturating_add(1);
-      }
-      Left => {
-        window.keep_cursor_visible = false;
-        window.scroll_left = window.scroll_left.saturating_sub(1);
-      }
-      Right => {
-        window.keep_cursor_visible = false;
-        window.scroll_left = window.scroll_left.saturating_add(1);
-      }
-
-      _ => {}
+    // Content modifications
+    Char('d') => {
+      ctx.buffer.apply_operations(&[Op::RemoveAll]);
+      ctx.buffer.history.commit();
     }
-    vec![]
-  }
-
-  fn status(&self) -> CowStr<'_> {
-    match &self.toast {
-      Some(toast) => toast.into(),
-      None => "normal".into(),
+    Char('a') => return vec![mode::Insert::switch_to()],
+    Char('x') => {
+      let name = take_register_target(ctx.registry, "clipboard");
+      ctx.registry.set(&name, Register::Content(copy(ctx.buffer)))
     }
+    Char('X') => {
+      let name = take_register_target(ctx.registry, "clipboard");
+      if let Some(Register::Content(contents)) = ctx.registry.get(&name) {
+        paste(ctx.buffer, contents);
+      }
+    }
+    Char('z') => undo(ctx.buffer),
+    Char('Z') => redo(ctx.buffer),
+    Char('r') => return vec![Pipe::switch_to()],
+
+    // Anchor movements
+    Char('h') => ctx.buffer.apply_operations(&[Op::MoveByChar(-1)]),
+    Char('j') => ctx.buffer.apply_operations(&[Op::MoveByLine(1)]),
+    Char('k') => ctx.buffer.apply_operations(&[Op::MoveByLine(-1)]),
+    Char('l') => ctx.buffer.apply_operations(&[Op::MoveByChar(1)]),
+    Char('g') => return vec![SeekDirection::switch_to()],
+    Char('b') => ctx.buffer.apply_operations(&[Op::Swap]),
+    Char('n') => ctx.buffer.apply_operations(&[Op::Collapse]),
+
+    // Selection manipulation
+    Char('u') => ctx.buffer.set_selections(vec![Selection::new_at_end(
+      0,
+      ctx.buffer.contents.len_chars(),
+    )]),
+    Char('t') => {
+      ctx.buffer.primary_selection =
+        wrap_add(ctx.buffer.selections.len(), ctx.buffer.primary_selection, 1)
+    }
+    Char('T') => {
+      ctx.buffer.primary_selection = wrap_add(
+        ctx.buffer.selections.len(),
+        ctx.buffer.primary_selection,
+        -1,
+      );
+    }
+    Char('y') => ctx
+      .buffer
+      .set_selections(vec![*ctx.buffer.primary_selection()]),
+    Char('Y') => {
+      let selections = ctx
+        .buffer
+        .selections
+        .iter()
+        .enumerate()
+        .filter(|&(i, _)| i != ctx.buffer.primary_selection)
+        .map(|(_, &v)| v)
+        .collect();
+      ctx.buffer.set_selections(selections);
+    }
+    Char('s') => return vec![SplitType::switch_to()],
+    Char('f') => return vec![FilterType::switch_to()],
+    _ => {}
   }
-}
-
-fn move_by_window_page(buffer: &mut Buffer, window: &mut Window, delta: isize) {
-  buffer.apply_operations(
-    &[
-      vec![Op::MoveByLine(delta); window.height / 2],
-      vec![Op::Collapse],
-    ]
-    .concat(),
-  );
-  center(buffer, window);
-}
-
-fn center(buffer: &Buffer, window: &mut Window) {
-  window.scroll_top = buffer
-    .primary_selection()
-    .cursor_line(&buffer.contents)
-    .saturating_sub(window.height / 2);
-}
+  vec![]
+});
 
 fn wrap_add(domain: usize, value: usize, delta: isize) -> usize {
   let value = (value as isize) + delta;
@@ -234,16 +168,15 @@ pub fn redo(buffer: &mut Buffer) {
   buffer.set_selections(selections);
 }
 
-pub fn take_register_target(registry: &mut Registry) -> Option<String> {
-  match registry.get("target") {
-    Some(Register::Content(target)) => match target.as_slice() {
-      [name, ..] => {
-        let name = name.to_string();
-        registry.del("target");
-        Some(name)
-      }
-      _ => None,
-    },
-    _ => None,
-  }
+pub fn take_register_target(registry: &mut Registry, default: &str) -> String {
+  let Some(target) = registry.get("target") else {
+    return default.to_string();
+  };
+  let Register::Content(target) = target;
+  let Some(target) = target.first() else {
+    return default.to_string();
+  };
+  let target = target.to_string();
+  registry.del("target");
+  target
 }

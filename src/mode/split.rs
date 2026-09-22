@@ -1,6 +1,20 @@
 use crate::*;
 use ropey::Rope;
 
+const HELP_TEXT: &str = "
+`s` split selection into matches
+`r` split selection around matches
+";
+
+mode!(SplitType, "split (choose type)", HELP_TEXT, |key, _ctx| {
+  use crate::Key::*;
+  match key {
+    Char('s') => vec![Split::switch_to(false)],
+    Char('r') => vec![Split::switch_to(true)],
+    _ => vec![Normal::switch_to()],
+  }
+});
+
 #[derive(Debug, Clone)]
 enum ModeResult {
   Empty,
@@ -27,29 +41,23 @@ impl Split {
 }
 
 impl Mode for Split {
-  fn update(
-    &mut self,
-    buffer: &mut Buffer,
-    _registry: &mut Registry,
-    _window: &mut Window,
-    key: Key,
-  ) -> Vec<UpdateCommand> {
+  fn update(&mut self, ctx: ModeContext, key: Key) -> Vec<UpdateCommand> {
     match self.editor.update(key) {
       MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
-      MiniEditorCommand::Update => update_preview(self, buffer),
+      MiniEditorCommand::Update => update_preview(self, ctx.buffer),
       MiniEditorCommand::Submit => {
         let command = self.editor.value.to_string();
         let result = match self.reject {
-          true => reject(&buffer.contents, &buffer.selections, &command),
-          false => accept(&buffer.contents, &buffer.selections, &command),
+          true => reject(&ctx.buffer.contents, &ctx.buffer.selections, &command),
+          false => accept(&ctx.buffer.contents, &ctx.buffer.selections, &command),
         };
         if let ModeResult::Ok(selections) = result {
-          buffer.primary_selection = selections.len().saturating_sub(1);
-          buffer.set_selections(selections);
+          ctx.buffer.primary_selection = selections.len().saturating_sub(1);
+          ctx.buffer.set_selections(selections);
         }
         return vec![Normal::switch_to()];
-      },
-      MiniEditorCommand::None => { },
+      }
+      MiniEditorCommand::None => {}
     }
     vec![]
   }

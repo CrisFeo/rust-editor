@@ -25,12 +25,12 @@ impl MiniEditor {
         } else {
           MiniEditorCommand::None
         }
-      },
+      }
       Key::Char(ch) => {
         let len = self.value.len_chars();
         self.value.insert_char(len, ch);
         MiniEditorCommand::Update
-      },
+      }
       Key::Enter => MiniEditorCommand::Submit,
       _ => MiniEditorCommand::None,
     }

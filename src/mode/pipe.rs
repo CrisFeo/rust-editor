@@ -15,49 +15,46 @@ impl Pipe {
 }
 
 impl Mode for Pipe {
-  fn update(
-    &mut self,
-    buffer: &mut Buffer,
-    _registry: &mut Registry,
-    _window: &mut Window,
-    key: Key,
-  ) -> Vec<UpdateCommand> {
+  fn update(&mut self, ctx: ModeContext, key: Key) -> Vec<UpdateCommand> {
     match self.editor.update(key) {
       MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
       MiniEditorCommand::Submit => {
         let results = pipe_selections_thru_script(
           &self.editor.value,
-          &buffer.contents,
-          &buffer.selections,
+          &ctx.buffer.contents,
+          &ctx.buffer.selections,
         );
         let mut results = match results {
           Ok(results) => results,
-          Err(error) => return vec![Normal::switch_to_with_toast(error)],
+          Err(error) => {
+            ctx.toast.status = Some(error);
+            return vec![Normal::switch_to()];
+          }
         };
         let mut selections = Vec::with_capacity(results.len());
         for i in 0..results.len() {
           let (selection, output) = results
             .get_mut(i)
             .expect("should be able to retrieve selection at index less than length when piping");
-          let change_a = selection.apply_operation(&mut buffer.contents, Op::RemoveAll);
-          let change_b = selection.apply_operation(&mut buffer.contents, Op::InsertStr(output));
+          let change_a = selection.apply_operation(&mut ctx.buffer.contents, Op::RemoveAll);
+          let change_b = selection.apply_operation(&mut ctx.buffer.contents, Op::InsertStr(output));
           selections.push(*selection);
           for j in i + 1..results.len() {
             let (next_selection, _) = results
               .get_mut(j)
               .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation during pipe");
-            next_selection.adjust(&buffer.contents, change_a.as_ref());
-            next_selection.adjust(&buffer.contents, change_b.as_ref());
+            next_selection.adjust(&ctx.buffer.contents, change_a.as_ref());
+            next_selection.adjust(&ctx.buffer.contents, change_b.as_ref());
           }
-          change_a.map(|c| buffer.history.record(c));
-          change_b.map(|c| buffer.history.record(c));
+          change_a.map(|c| ctx.buffer.history.record(c));
+          change_b.map(|c| ctx.buffer.history.record(c));
         }
-        buffer.history.commit();
-        buffer.set_selections(selections);
+        ctx.buffer.history.commit();
+        ctx.buffer.set_selections(selections);
         return vec![Normal::switch_to()];
-      },
-      MiniEditorCommand::Update => {},
-      MiniEditorCommand::None => { },
+      }
+      MiniEditorCommand::Update => {}
+      MiniEditorCommand::None => {}
     }
     vec![]
   }

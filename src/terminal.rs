@@ -1,6 +1,7 @@
 use crate::*;
 use crossterm::event::{
-  read, DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyCode, KeyModifiers, MouseEventKind,
+  read, DisableMouseCapture, EnableMouseCapture, Event as CrosstermEvent, KeyCode, KeyModifiers,
+  MouseEventKind,
 };
 use crossterm::style::{Print, ResetColor, SetBackgroundColor, SetForegroundColor};
 use crossterm::terminal::ClearType;
@@ -64,7 +65,9 @@ impl Terminal {
     queue!(output, cursor::MoveTo(0, 0)).expect("should move cursor when setting up");
     queue!(output, ResetColor).expect("should reset colors when setting up");
     queue!(output, EnableMouseCapture).expect("should enable mouse when setting up");
-    output.flush().expect("should flush queued output when setting up");
+    output
+      .flush()
+      .expect("should flush queued output when setting up");
     let (width, height) = {
       let (width, height) = terminal::size().expect("should retrieve terminal size");
       (width as usize, height as usize)
@@ -109,10 +112,12 @@ impl Terminal {
           KeyCode::Down => return Event::Key(Key::Down),
           KeyCode::Tab => return Event::Key(Key::Tab),
           KeyCode::Esc => return Event::Key(Key::Esc),
-          KeyCode::Char('z') if event.modifiers & KeyModifiers::CONTROL == KeyModifiers::CONTROL => {
+          KeyCode::Char('z')
+            if event.modifiers & KeyModifiers::CONTROL == KeyModifiers::CONTROL =>
+          {
             self.suspend();
             return Event::Redraw;
-          },
+          }
           KeyCode::Char(c) => return Event::Key(Key::Char(c)),
           _ => {}
         },
@@ -215,14 +220,20 @@ impl Terminal {
         }
       }
     }
-    self.output.flush().expect("should flush queued output when presenting");
+    self
+      .output
+      .flush()
+      .expect("should flush queued output when presenting");
   }
 }
 
 impl Drop for Terminal {
   fn drop(&mut self) {
     leave_controlled_terminal(&mut self.output, false);
-    self.output.flush().expect("should flush queued output when dropping");
+    self
+      .output
+      .flush()
+      .expect("should flush queued output when dropping");
   }
 }
 

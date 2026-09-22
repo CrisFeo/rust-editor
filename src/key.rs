@@ -1,6 +1,6 @@
 use crate::*;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
 pub enum Key {
   Char(char),
   Tab,
@@ -44,9 +44,9 @@ impl Key {
     }
     while !input.is_empty() {
       if consume_if(&mut input, "<LT>") {
-          keys.push(Self::Char('<'));
+        keys.push(Self::Char('<'));
       } else if consume_if(&mut input, "<GT>") {
-          keys.push(Self::Char('>'));
+        keys.push(Self::Char('>'));
       } else if consume_if(&mut input, "<TAB>") {
         keys.push(Self::Tab);
       } else if consume_if(&mut input, "<ESC>") {

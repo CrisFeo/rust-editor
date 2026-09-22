@@ -10,23 +10,17 @@ impl Insert {
 }
 
 impl Mode for Insert {
-  fn update(
-    &mut self,
-    buffer: &mut Buffer,
-    _registry: &mut Registry,
-    _window: &mut Window,
-    key: Key,
-  ) -> Vec<UpdateCommand> {
+  fn update(&mut self, ctx: ModeContext, key: Key) -> Vec<UpdateCommand> {
     use crate::key::Key::*;
     match key {
       Esc => {
-        buffer.history.commit();
+        ctx.buffer.history.commit();
         return vec![Normal::switch_to()];
       }
-      Backspace => buffer.apply_operations(&[Op::Remove]),
-      Tab => buffer.apply_operations(&[Op::InsertStr("  ")]),
-      Enter => buffer.apply_operations(&[Op::InsertChar('\n')]),
-      Char(ch) => buffer.apply_operations(&[Op::InsertChar(ch)]),
+      Backspace => ctx.buffer.apply_operations(&[Op::Remove]),
+      Tab => ctx.buffer.apply_operations(&[Op::InsertStr("  ")]),
+      Enter => ctx.buffer.apply_operations(&[Op::InsertChar('\n')]),
+      Char(ch) => ctx.buffer.apply_operations(&[Op::InsertChar(ch)]),
       _ => {}
     }
     vec![]

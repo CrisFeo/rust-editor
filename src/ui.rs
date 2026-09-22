@@ -33,7 +33,7 @@ impl Ui {
     self.terminal.poll()
   }
 
-  pub fn render(&mut self, view: &View) {
+  pub fn render(&mut self, toast: &Toast, view: &View) {
     let View {
       buffer,
       window,
@@ -115,7 +115,10 @@ impl Ui {
     }
     // render status bar
     {
-      let status_left = mode.status();
+      let status_left = match toast.status {
+        Some(ref status) => status.into(),
+        None => mode.status(),
+      };
       let status_left_size = status_left.chars().count();
       let status_right = {
         let cursor_location = match primary_selection {
@@ -192,7 +195,12 @@ impl Ui {
     (is_selection, is_primary, is_cursor)
   }
 
-  fn style(&self, is_selection: bool, is_primary: bool, is_cursor: bool) -> (Option<Color>, Option<Color>) {
+  fn style(
+    &self,
+    is_selection: bool,
+    is_primary: bool,
+    is_cursor: bool,
+  ) -> (Option<Color>, Option<Color>) {
     let mut face = self.theme.default_face;
     if is_selection {
       if is_primary {
