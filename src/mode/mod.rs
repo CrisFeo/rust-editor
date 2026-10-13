@@ -1,21 +1,27 @@
+mod clipboard;
 mod filter;
+mod history;
 mod insert;
 mod meta;
 mod normal;
 mod open;
 mod pipe;
 mod seek;
+mod selections;
 mod split;
 mod target;
 mod viewport;
 
+pub use clipboard::*;
 pub use filter::*;
+pub use history::*;
 pub use insert::*;
 pub use meta::*;
 pub use normal::*;
 pub use open::*;
 pub use pipe::*;
 pub use seek::*;
+pub use selections::*;
 pub use split::*;
 pub use target::*;
 pub use viewport::*;
@@ -76,11 +82,7 @@ macro_rules! mode {
 }
 
 pub fn help(content: &str) -> Vec<UpdateCommand> {
-  let content = content
-    .trim()
-    .replace("<", "<LT>")
-    .replace(">", "<GT>")
-    .replace("\n", "<RET>");
+  let content = escape_keys(content);
   let input = format!("uda{content}<RET><ESC>n");
   let keys = Key::from_input(&input);
   vec![

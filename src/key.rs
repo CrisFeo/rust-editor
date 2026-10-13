@@ -13,6 +13,15 @@ pub enum Key {
   Right,
 }
 
+pub fn escape_keys(content: &str) -> String {
+  content
+    .trim()
+    .replace("<", "<LT>")
+    .replace(">", "<GT>")
+    .replace("\n", "<RET>")
+    .replace("\t", "<TAB>")
+}
+
 impl Key {
   pub fn to_input(&self) -> CowStr<'static> {
     match self {

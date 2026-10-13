@@ -19,38 +19,19 @@ impl Mode for Pipe {
     match self.editor.update(key) {
       MiniEditorCommand::Cancel => return vec![Normal::switch_to()],
       MiniEditorCommand::Submit => {
-        let results = pipe_selections_thru_script(
+        let outputs = pipe_selections_thru_script(
           &self.editor.value,
           &ctx.buffer.contents,
           &ctx.buffer.selections,
         );
-        let mut results = match results {
-          Ok(results) => results,
+        let mut outputs = match outputs {
+          Ok(outputs) => outputs,
           Err(error) => {
             ctx.toast.status = Some(error);
             return vec![Normal::switch_to()];
           }
         };
-        let mut selections = Vec::with_capacity(results.len());
-        for i in 0..results.len() {
-          let (selection, output) = results
-            .get_mut(i)
-            .expect("should be able to retrieve selection at index less than length when piping");
-          let change_a = selection.apply_operation(&mut ctx.buffer.contents, Op::RemoveAll);
-          let change_b = selection.apply_operation(&mut ctx.buffer.contents, Op::InsertStr(output));
-          selections.push(*selection);
-          for j in i + 1..results.len() {
-            let (next_selection, _) = results
-              .get_mut(j)
-              .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation during pipe");
-            next_selection.adjust(&ctx.buffer.contents, change_a.as_ref());
-            next_selection.adjust(&ctx.buffer.contents, change_b.as_ref());
-          }
-          change_a.map(|c| ctx.buffer.history.record(c));
-          change_b.map(|c| ctx.buffer.history.record(c));
-        }
-        ctx.buffer.history.commit();
-        ctx.buffer.set_selections(selections);
+        replace_selections_with_outputs(ctx.buffer, &mut outputs);
         return vec![Normal::switch_to()];
       }
       MiniEditorCommand::Update => {}
@@ -68,11 +49,13 @@ impl Mode for Pipe {
   }
 }
 
+type SelectionOutputs = Vec<(Selection, String)>;
+
 fn pipe_selections_thru_script(
   script: &Rope,
   contents: &Rope,
   selections: &[Selection],
-) -> Result<Vec<(Selection, String)>, String> {
+) -> Result<SelectionOutputs, String> {
   leave_controlled_terminal(&mut std::io::stdout(), true);
   let mut command = Command::new("sh");
   command.arg("-c");
@@ -104,4 +87,27 @@ fn pipe_selections_thru_script(
   }
   enter_controlled_terminal(&mut std::io::stdout());
   Ok(results)
+}
+
+fn replace_selections_with_outputs(buffer: &mut Buffer, outputs: &mut SelectionOutputs) {
+  let mut selections = Vec::with_capacity(outputs.len());
+  for i in 0..outputs.len() {
+    let (selection, output) = outputs
+      .get_mut(i)
+      .expect("should be able to retrieve selection at index less than length when piping");
+    let change_a = selection.apply_operation(&mut buffer.contents, Op::RemoveAll);
+    let change_b = selection.apply_operation(&mut buffer.contents, Op::InsertStr(output));
+    selections.push(*selection);
+    for j in i + 1..outputs.len() {
+      let (next_selection, _) = outputs
+        .get_mut(j)
+        .expect("should be able to retrieve selection at index less than length when adjusting selections after applying operation during pipe");
+      next_selection.adjust(&buffer.contents, change_a.as_ref());
+      next_selection.adjust(&buffer.contents, change_b.as_ref());
+    }
+    change_a.map(|c| buffer.history.record(c));
+    change_b.map(|c| buffer.history.record(c));
+  }
+  buffer.history.commit();
+  buffer.set_selections(selections);
 }
