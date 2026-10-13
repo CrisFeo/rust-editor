@@ -18,8 +18,11 @@
 - [x] move toast up to application level
   - update modal toasts to use command
   - make view save/load errors use toast
+- [ ] open tmp buffer with key history
 - [ ] open tmp buffer with register content
 - [ ] fast repeat last command on enter
 - [ ] vimgrep argument support
 - [ ] macros: "history" buffer to copy from
 - [ ] macros: early exit on errors?
+- [ ] auto-detect color scheme or make agnostic
+- [ ] rename recorder cause its... not
