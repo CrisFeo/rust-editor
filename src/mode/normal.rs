@@ -19,6 +19,10 @@ const HELP_TEXT: &str = "
 `j` move active anchor down
 `k` move active anchor up
 `l` move active anchor right
+`Left`  move active anchor left
+`Down`  move active anchor down
+`Up`    move active anchor up
+`Right` move active anchor right
 `g` move current cursor to matching regex (seek mode)
 `b` swap active and passive anchor
 `n` collapse selection to active anchor
@@ -52,6 +56,10 @@ mode!(Normal, "normal", HELP_TEXT, |key, ctx: ModeContext| {
     Char('j') => ctx.buffer.apply_operations(&[Op::MoveByLine(1)]),
     Char('k') => ctx.buffer.apply_operations(&[Op::MoveByLine(-1)]),
     Char('l') => ctx.buffer.apply_operations(&[Op::MoveByChar(1)]),
+    Left      => ctx.buffer.apply_operations(&[Op::MoveByChar(-1)]),
+    Down      => ctx.buffer.apply_operations(&[Op::MoveByLine(1)]),
+    Up        => ctx.buffer.apply_operations(&[Op::MoveByLine(-1)]),
+    Right     => ctx.buffer.apply_operations(&[Op::MoveByChar(1)]),
     Char('g') => return vec![SeekDirection::switch_to()],
     Char('b') => ctx.buffer.apply_operations(&[Op::Swap]),
     Char('n') => ctx.buffer.apply_operations(&[Op::Collapse]),
